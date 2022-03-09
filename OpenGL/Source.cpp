@@ -4,8 +4,9 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow* window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void drawSkybox(GLuint vbo, GLuint texture, GLuint shader, glm::mat4 view, glm::mat4 projection);
 
 // Camera settings
 //							  width, heigh, near plane, far plane
@@ -20,56 +21,43 @@ Camera camera(camera_settings, glm::vec3(0.0, 5.0, 12.0));
 double lastX = camera_settings.screenWidth / 2.0f;
 double lastY = camera_settings.screenHeight / 2.0f;
 
+class Light {
 
-// Obtained from LearnOpenGL
-// https://learnopengl.com/code_viewer.php?code=advanced/cubemaps_skybox_data
-const GLfloat skyboxVertices[] = {
-	// positions          
-	-1.0f,  1.0f, -1.0f,
-	-1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-	 1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
+private:
+	GLfloat position[3] = { 1.0f };
+	GLfloat intensity[3] = { 1.0f };
 
-	-1.0f, -1.0f,  1.0f,
-	-1.0f, -1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f,  1.0f,
-	-1.0f, -1.0f,  1.0f,
+public:
 
-	 1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
+	Light(glm::vec3 positionIn, glm::vec3 intensityIn) {
+		this->setPosition(positionIn);
+		this->setIntensity(intensityIn);
+	}
 
-	-1.0f, -1.0f,  1.0f,
-	-1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f, -1.0f,  1.0f,
-	-1.0f, -1.0f,  1.0f,
+	void setPosition(glm::vec3 positionIn) {
+		position[0] = positionIn.r;
+		position[1] = positionIn.g;
+		position[2] = positionIn.b;
+	}
 
-	-1.0f,  1.0f, -1.0f,
-	 1.0f,  1.0f, -1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	-1.0f,  1.0f,  1.0f,
-	-1.0f,  1.0f, -1.0f,
+	void setIntensity(glm::vec3 intensityIn) {
+		intensity[0] = intensityIn.r;
+		intensity[1] = intensityIn.g;
+		intensity[2] = intensityIn.b;
+	}
 
-	-1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-	 1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-	 1.0f, -1.0f,  1.0f
+	GLfloat* getPosition() {
+		return position;
+	}
+
+	GLfloat* getIntensity() {
+		return intensity;
+	}
 };
 
 int main()
 {
+	#pragma region Initialize OpenGL
 	// glfw: initialize and configure
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -109,46 +97,41 @@ int main()
 	glEnable(GL_DEPTH_TEST);	//Enables depth testing
 	glEnable(GL_CULL_FACE);		//Enables face culling
 	glFrontFace(GL_CCW);		//Specifies which winding order if front facing
+#pragma endregion
 
-	////	Shaders - Textures - Models	////
-
+	//Shaders
 	GLuint basicShader;
 	GLuint skyboxShader;
 
-	// Texture container
+	// Textures
 	GLuint metalTex;
 	GLuint marbleTex;
 	GLuint skyboxTexture;
 
-	// build and compile our shader program
-	GLSL_ERROR glsl_err_basic = ShaderLoader::createShaderProgram(
-		string("Resources\\Shaders\\Basic_shader.vert"), 
-		string("Resources\\Shaders\\Basic_shader.frag"),
-		&basicShader);
+	// Load shaders
+	GLSL_ERROR glsl_err_basic = 
+		ShaderLoader::createShaderProgram(
+			string("Resources\\Shaders\\Basic_shader.vert"),
+			string("Resources\\Shaders\\Basic_shader.frag"),
+			&basicShader
+		);
+	GLSL_ERROR glsl_err_skybox = 
+		ShaderLoader::createShaderProgram(
+			string("Resources\\Shaders\\skybox_vert.glsl"), 
+			string("Resources\\Shaders\\skybox_frag.glsl"), 
+			&skyboxShader
+		);
 
-	GLSL_ERROR glsl_err_skybox = ShaderLoader::createShaderProgram(
-		string("Resources\\Shaders\\skybox_vert.glsl"),
-		string("Resources\\Shaders\\skybox_frag.glsl"),
-		&skyboxShader);
-
-	GLuint skyboxArrayBuffer;
-	GLuint skyboxVertexBuffer;
-
-	glGenVertexArrays(1, &skyboxArrayBuffer);
-	glBindVertexArray(skyboxArrayBuffer);
-
-	glGenBuffers(1, &skyboxVertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, skyboxVertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-
-	Model sphere("Resources\\Models\\Sphere.obj");
-	Model plane("Resources\\Models\\Plane.obj");
-
+	// Load textures
 	metalTex = TextureLoader::loadTexture("Resources\\Models\\metal_texture.png");
 	marbleTex = TextureLoader::loadTexture("Resources\\Models\\marble_texture.jpg");
-	skyboxTexture = TextureLoader::loadTexture("Resources\\Models\\marble_texture.jpg");
+	skyboxTexture = TextureLoader::loadCubeMapTexture("Resources\\Textures\\skybox\\", "", ".png", GL_RGBA, GL_LINEAR, GL_LINEAR, 8.0F, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, true);
+
+
+	// Models
+	Model sphere("Resources\\Models\\Sphere.obj");
+	Model plane("Resources\\Models\\Plane.obj");
+	Model cone("Resources\\Models\\cone.fbx");
 
 	sphere.attachTexture(metalTex);
 	plane.attachTexture(marbleTex);
@@ -158,17 +141,44 @@ int main()
 	GLfloat light_ambient[] = { 0.1, 0.1, 0.1, 1.0 };	// Dim light 
 	GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };	// White main light 
 
-	GLfloat lightOne_position[] = { 5.0, 5.0, 5.0, 1.0 };	// Point light (w=1.0)
-	GLfloat lightOne_colour[] = { 8.0, 0.0, 0.0, 1.0 };
+	vector<Light> lights;
+	lights.push_back(
+		Light(glm::vec3(5.0, 5.0, 5.0), glm::vec3(8.0, 0.0, 0.0))
+	);
+	lights.push_back(
+		Light(glm::vec3(-5.0, 5.0, 5.0), glm::vec3(0.0, 8.0, 0.0))
+	);
+	lights.push_back(
+		Light(glm::vec3(5.0, 5.0, -5.0), glm::vec3(0.0, 0.0, 8.0))
+	);
+	lights.push_back(
+		Light(glm::vec3(-5.0, 5.0, -5.0), glm::vec3(8.0, 8.0,8.0))
+	);
 
-	GLfloat lightTwo_position[] = { -5.0, 5.0, 5.0, 1.0 };	// Point light (w=1.0)
-	GLfloat lightTwo_colour[] = { 0.0, 8.0, 0.0, 1.0 };
+	/*Light lightOne, lightTwo, lightThree, lightFour = Light();
+	lightOne.setPosition(5.0, 5.0, 5.0);
+	lightOne.setIntensity(8.0, 0.0, 0.0);
 
-	GLfloat lightThree_position[] = { 5.0, 5.0, -5.0, 1.0 };	// Point light (w=1.0)
-	GLfloat lightThree_colour[] = { 0.0, 0.0, 8.0, 1.0 };
+	lightTwo.setPosition(-5.0, 5.0, 5.0);
+	lightTwo.setIntensity(0.0, 8.0, 0.0);
 
-	GLfloat lightFour_position[] = { -5.0, 5.0, -5.0, 1.0 };	// Point light (w=1.0)
-	GLfloat lightFour_colour[] = { 8.0, 8.0, 8.0, 1.0 };
+	lightThree.setPosition(5.0, 5.0, -5.0);
+	lightThree.setIntensity(0.0, 0.0, 8.0);
+
+	lightFour.setPosition(-5.0, 5.0, -5.0);
+	lightFour.setIntensity(8.0, 8.0, 8.0);*/
+
+	//GLfloat lightOne_position[] = { 5.0, 5.0, 5.0, 1.0 };	// Point light (w=1.0)
+	//GLfloat lightOne_colour[] = { 8.0, 0.0, 0.0, 1.0 };
+
+	//GLfloat lightTwo_position[] = { -5.0, 5.0, 5.0, 1.0 };	// Point light (w=1.0)
+	//GLfloat lightTwo_colour[] = { 0.0, 8.0, 0.0, 1.0 };
+
+	//GLfloat lightThree_position[] = { 5.0, 5.0, -5.0, 1.0 };	// Point light (w=1.0)
+	//GLfloat lightThree_colour[] = { 0.0, 0.0, 8.0, 1.0 };
+
+	//GLfloat lightFour_position[] = { -5.0, 5.0, -5.0, 1.0 };	// Point light (w=1.0)
+	//GLfloat lightFour_colour[] = { 8.0, 8.0, 8.0, 1.0 };
 
 	GLfloat	attenuation[] = { 1.0, 0.10, 0.08 };
 
@@ -204,6 +214,67 @@ int main()
 	GLuint uMatSpecularCol = glGetUniformLocation(basicShader, "matSpecularColour");
 	GLuint uMatSpecularExp = glGetUniformLocation(basicShader, "matSpecularExponent");
 
+	// Skybox
+
+	float skyboxVertices[] = {
+		// positions          
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		-1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f
+	};
+
+	GLuint skyboxVAO, skyboxVBO;
+
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	glUseProgram(skyboxShader);
+	glUniform1i(glGetUniformLocation(skyboxShader, "skybox"), 0);
+
 	// render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -217,20 +288,13 @@ int main()
 
 		glm::mat4 sphereModel = glm::mat4(1.0);
 		glm::mat4 planeModel = glm::mat4(1.0);
-
-		glDepthMask(GL_FALSE);
-		glUseProgram(skyboxShader);
-
 		glm::mat4 view = camera.getViewMatrix();
 		glm::mat4 projection = camera.getProjectionMatrix();
 
-		glBindVertexArray(skyboxArrayBuffer);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glDepthMask(GL_TRUE);
-
 		glm::mat4 scaleMat = glm::scale(glm::mat4(1.0), glm::vec3(0.3, 0.3, 0.3));
 		glm::vec3 eyePos = camera.getCameraPosition();
+
+		drawSkybox(skyboxVAO, skyboxTexture, skyboxShader, view, projection);
 
 		glUseProgram(basicShader); //Use the Basic shader
 
@@ -238,18 +302,28 @@ int main()
 		//Pass the light data
 		glUniform4fv(uLightDiffuse, 1, (GLfloat*)&light_diffuse);
 		glUniform4fv(uLightAmbient, 1, (GLfloat*)&light_ambient);
-		
-		glUniform4fv(uLightOnePosition, 1, (GLfloat*)&lightOne_position);
-		glUniform4fv(uLightOneColour, 1, (GLfloat*)&lightOne_colour);
 
-		glUniform4fv(uLightTwoPosition, 1, (GLfloat*)&lightTwo_position);
-		glUniform4fv(uLightTwoColour, 1, (GLfloat*)&lightTwo_colour);
 
-		glUniform4fv(uLightThreePosition, 1, (GLfloat*)&lightThree_position);
-		glUniform4fv(uLightThreeColour, 1, (GLfloat*)&lightThree_colour);
+		glUniform1i(glGetUniformLocation(basicShader, "lightCount"), lights.size());
 
-		glUniform4fv(uLightFourPosition, 1, (GLfloat*)&lightFour_position);
-		glUniform4fv(uLightFourColour, 1, (GLfloat*)&lightFour_colour);
+		for (int i = 0; i < lights.size(); i++) {
+			/*GLuint uLightPosition = glGetUniformLocation(basicShader, "lightOne");
+			GLuint uLightColour = glGetUniformLocation(basicShader, "lightOneColour");*/
+
+			string lightLoc = "Light[" + to_string(i) + "]";
+			string positionLocStr = lightLoc + ".position";
+			string intensityLocStr = lightLoc + ".intensity";
+
+			GLuint positionLoc = glGetUniformLocation(basicShader, positionLocStr.c_str());
+			GLuint intensityLoc = glGetUniformLocation(basicShader, intensityLocStr.c_str());
+
+			Light light = lights.at(i);
+			glm::vec4 lightPos = glm::vec4(light.getPosition()[0], light.getPosition()[1], light.getPosition()[2], 1.0);
+			glm::vec4 lightInt = glm::vec4(light.getIntensity()[0], light.getIntensity()[1], light.getIntensity()[2], 1.0);
+
+			glUniform3fv(positionLoc, 1, (GLfloat*)&lightPos);
+			glUniform3fv(intensityLoc, 1, (GLfloat*)&lightInt);
+		}
 
 		glUniform3fv(uLightAttenuation, 1, (GLfloat*)&attenuation);
 		glUniform3fv(uEyePos, 1, (GLfloat*)&eyePos);
@@ -265,33 +339,34 @@ int main()
 
 		glm::vec3 cameraPos = camera.getCameraPosition();
 
-		lightFour_colour[0] = cameraPos.r;
-		lightFour_colour[1] = cameraPos.g;
-		lightFour_colour[2] = cameraPos.b;
+		lights.at(3).setIntensity(cameraPos);
 
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(planeModel));
 		plane.draw(basicShader); //Draw the plane
 
-		//sphereModel = glm::translate(glm::mat4(1.0), glm::vec3(-3.0, 3.0, -3.0)) * scaleMat;
-		//glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(sphereModel));
-		//sphere.draw(basicShader); //Draw first sphere
+		sphereModel = glm::translate(glm::mat4(1.0), glm::vec3(-3.0, 3.0, -3.0)) * scaleMat;
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(sphereModel));
+		sphere.draw(basicShader); //Draw first sphere
 
-		//sphereModel = glm::translate(glm::mat4(1.0), glm::vec3(3.0, 3.0, -3.0)) * scaleMat;
-		//glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(sphereModel));
-		//sphere.draw(basicShader); //Draw second sphere
+		sphereModel = glm::translate(glm::mat4(1.0), glm::vec3(3.0, 3.0, -3.0)) * scaleMat;
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(sphereModel));
+		sphere.draw(basicShader); //Draw second sphere
 
-		//sphereModel = glm::translate(glm::mat4(1.0), glm::vec3(-3.0, 3.0, 3.0)) * scaleMat;
-		//glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(sphereModel));
-		//sphere.draw(basicShader); //Draw third sphere
+		sphereModel = glm::translate(glm::mat4(1.0), glm::vec3(-3.0, 3.0, 3.0)) * scaleMat;
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(sphereModel));
+		sphere.draw(basicShader); //Draw third sphere
 
-		//sphereModel = glm::translate(glm::mat4(1.0), glm::vec3(3.0, 3.0, 3.0)) * scaleMat;
-		//glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(sphereModel));
-		//sphere.draw(basicShader); //Draw fourth sphere
+		sphereModel = glm::translate(glm::mat4(1.0), glm::vec3(3.0, 3.0, 3.0)) * scaleMat;
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(sphereModel));
+		sphere.draw(basicShader); //Draw fourth sphere
 
 		// glfw: swap buffers and poll events
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	glDeleteVertexArrays(1, &skyboxVAO);
+	glDeleteBuffers(1, &skyboxVBO);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	glfwTerminate();
@@ -299,7 +374,7 @@ int main()
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow* window)
 {
 	timer.updateDeltaTime();
 
@@ -350,33 +425,24 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	camera.processMouseScroll(yoffset);
 }
 
-unsigned int loadCubemap(vector<std::string> faces)
-{
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-	int width, height, nrChannels;
-	for (unsigned int i = 0; i < faces.size(); i++)
-	{
-		unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-		if (data)
-		{
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-			);
-		}
-		else
-		{
-			std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
-			stbi_image_free(data);
-		}
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	return textureID;
+void drawSkybox(GLuint vao, GLuint texture, GLuint shader, glm::mat4 view, glm::mat4 projection) {
+	// draw skybox as last
+	//glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+	//glDepthFunc(GL_FALSE);
+	glDepthMask(GL_FALSE);
+	glUseProgram(shader);
+	view = glm::mat4(glm::mat3(camera.getViewMatrix()));
+	glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+	/*skyboxShader.setMat4("view", view);
+	skyboxShader.setMat4("projection", projection);*/
+	// skybox cube
+	glBindVertexArray(vao);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+	//glDepthFunc(GL_LESS); // set depth function back to default
+	//glDepthFunc(GL_TRUE);
+	glDepthMask(GL_TRUE);
 }
