@@ -1,4 +1,5 @@
 #include "Includes.h"
+#include "stb_image.h"
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -8,24 +9,14 @@ void processInput(GLFWwindow* window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void drawSkybox(GLuint vbo, GLuint texture, GLuint shader, glm::mat4 view, glm::mat4 projection);
 
-// Camera settings
-//							  width, heigh, near plane, far plane
-Camera_settings camera_settings{ 1200, 1000, 0.1, 100.0 };
-
-//Timer
-Timer timer;
-
-// Instantiate the camera object with basic data
-Camera camera(camera_settings, glm::vec3(0.0, 5.0, 12.0));
-
-double lastX = camera_settings.screenWidth / 2.0f;
-double lastY = camera_settings.screenHeight / 2.0f;
-
+// Classes
 class Light {
 
 private:
-	GLfloat position[3] = { 1.0f };
-	GLfloat intensity[3] = { 1.0f };
+	glm::vec3 position;
+	glm::vec3 intensity;
+	glm::vec3 attenuation;
+	glm::vec3 diffuse;
 
 public:
 
@@ -35,25 +26,68 @@ public:
 	}
 
 	void setPosition(glm::vec3 positionIn) {
-		position[0] = positionIn.r;
-		position[1] = positionIn.g;
-		position[2] = positionIn.b;
+		this->position = positionIn;
 	}
 
 	void setIntensity(glm::vec3 intensityIn) {
-		intensity[0] = intensityIn.r;
-		intensity[1] = intensityIn.g;
-		intensity[2] = intensityIn.b;
+		this->intensity = intensityIn;
 	}
 
-	GLfloat* getPosition() {
+	void setAttenuation(glm::vec3 attenuationIn) {
+		this->attenuation = attenuationIn;
+	}
+
+	void setDiffusion(glm::vec3 diffuseIn) {
+		this->diffuse = diffuseIn;
+	}
+
+	glm::vec3 getPosition() {
 		return position;
 	}
 
-	GLfloat* getIntensity() {
+	glm::vec3 getIntensity() {
 		return intensity;
 	}
+
+	glm::vec3 getAttenuation() {
+		return attenuation;
+	}
+
+	glm::vec3 getDiffusion() {
+		return diffuse;
+	}
 };
+
+struct TexturedMaterial {
+	GLuint albedo = 0;
+	GLuint specular = 0;
+	GLuint normal = 0;
+
+	TexturedMaterial(string albedoPath) {
+		albedo = TextureLoader::loadTexture(albedoPath);
+	}
+
+	TexturedMaterial(string albedoPath, string specularPath) {
+		albedo = TextureLoader::loadTexture(albedoPath);
+		specular = TextureLoader::loadTexture(specularPath);
+	}
+
+	TexturedMaterial(string albedoPath, string specularPath, string normalPath) {
+		albedo = TextureLoader::loadTexture(albedoPath);
+		specular = TextureLoader::loadTexture(specularPath);
+		normal = TextureLoader::loadTexture(normalPath);
+	}
+};
+
+// Camera                      screenWidth, screenHeight, nearPlane, farPlane
+Camera_settings camera_settings { 1200, 1000, 0.1, 100.0 };
+Camera camera(camera_settings, glm::vec3(0.0, 5.0, 12.0));
+
+//Timer
+Timer timer;
+
+double lastX = camera_settings.screenWidth / 2.0f;
+double lastY = camera_settings.screenHeight / 2.0f;
 
 int main()
 {
@@ -123,18 +157,20 @@ int main()
 		);
 
 	// Load textures
-	metalTex = TextureLoader::loadTexture("Resources\\Models\\metal_texture.png");
 	marbleTex = TextureLoader::loadTexture("Resources\\Models\\marble_texture.jpg");
 	skyboxTexture = TextureLoader::loadCubeMapTexture("Resources\\Textures\\skybox\\", "", ".png", GL_RGBA, GL_LINEAR, GL_LINEAR, 8.0F, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, true);
 
+	TexturedMaterial metalMaterial = TexturedMaterial("Resources\\Models\\metal_texture.png", "Resources\\Models\\metal_texture_specular.png");
+
 
 	// Models
-	Model sphere("Resources\\Models\\Sphere.obj");
-	Model plane("Resources\\Models\\Plane.obj");
-	Model cone("Resources\\Models\\cone.fbx");
-
-	sphere.attachTexture(metalTex);
+	Model sphere = Model("Resources\\Models\\Sphere.obj");
+	Model plane = Model("Resources\\Models\\Plane.obj");
 	plane.attachTexture(marbleTex);
+
+	sphere.attachTexture(metalMaterial.albedo);
+	sphere.attachTexture(metalMaterial.specular, "texture_specular");
+	//plane.attachTexture(metalMaterial.specular, "texture_specular");
 
 	//Light Data///////////////////////////////////////////////
 	// Lights
@@ -180,8 +216,6 @@ int main()
 	//GLfloat lightFour_position[] = { -5.0, 5.0, -5.0, 1.0 };	// Point light (w=1.0)
 	//GLfloat lightFour_colour[] = { 8.0, 8.0, 8.0, 1.0 };
 
-	GLfloat	attenuation[] = { 1.0, 0.10, 0.08 };
-
 	// Materials
 	GLfloat mat_amb_diff[] = { 1.0, 1.0, 1.0, 1.0 };	// Texture map will provide ambient and diffuse.
 	GLfloat mat_specularCol[] = { 1.0, 1.0, 1.0, 1.0 }; // White highlight
@@ -190,20 +224,6 @@ int main()
 	//Uniform Locations - Basic Shader////////////////////////////////////////////
 	// Get unifom locations in shader
 	GLuint uLightAmbient = glGetUniformLocation(basicShader, "lightAmbient");
-	GLuint uLightDiffuse = glGetUniformLocation(basicShader, "lightDiffuse");
-	GLuint uLightAttenuation = glGetUniformLocation(basicShader, "lightAttenuation");
-
-	GLuint uLightOnePosition = glGetUniformLocation(basicShader, "lightOne");
-	GLuint uLightOneColour = glGetUniformLocation(basicShader, "lightOneColour");
-
-	GLuint uLightTwoPosition = glGetUniformLocation(basicShader, "lightTwo");
-	GLuint uLightTwoColour = glGetUniformLocation(basicShader, "lightTwoColour");
-
-	GLuint uLightThreePosition = glGetUniformLocation(basicShader, "lightThree");
-	GLuint uLightThreeColour = glGetUniformLocation(basicShader, "lightThreeColour");
-
-	GLuint uLightFourPosition = glGetUniformLocation(basicShader, "lightFour");
-	GLuint uLightFourColour = glGetUniformLocation(basicShader, "lightFourColour");
 
 
 	GLuint uEyePos = glGetUniformLocation(basicShader, "eyePos");
@@ -275,12 +295,19 @@ int main()
 	glUseProgram(skyboxShader);
 	glUniform1i(glGetUniformLocation(skyboxShader, "skybox"), 0);
 
+	int frames = 0;
+	int programTime = 1;
+
 	// render loop
 	while (!glfwWindowShouldClose(window))
 	{
 		// input
 		processInput(window);
 		timer.tick();
+
+		string fps = "Avg FPS: " + to_string(timer.averageFPS());
+		string windowTitle = "30003287 - Apollo / Artemis / Superheavy Starship (" + fps + ")";
+		glfwSetWindowTitle(window, windowTitle.c_str());
 
 		// render
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -296,36 +323,42 @@ int main()
 
 		drawSkybox(skyboxVAO, skyboxTexture, skyboxShader, view, projection);
 
-		glUseProgram(basicShader); //Use the Basic shader
+		glUseProgram(0);
+		glUseProgram(basicShader);
 
-		//Pass the uniform data to Basic shader///////////////////////////////////
-		//Pass the light data
-		glUniform4fv(uLightDiffuse, 1, (GLfloat*)&light_diffuse);
+		// Light data
 		glUniform4fv(uLightAmbient, 1, (GLfloat*)&light_ambient);
 
-
 		glUniform1i(glGetUniformLocation(basicShader, "lightCount"), lights.size());
-
 		for (int i = 0; i < lights.size(); i++) {
-			/*GLuint uLightPosition = glGetUniformLocation(basicShader, "lightOne");
-			GLuint uLightColour = glGetUniformLocation(basicShader, "lightOneColour");*/
+
+			Light light = lights.at(i);
+			light.setAttenuation(glm::vec3(1.0, 0.1, 0.08));
+			light.setDiffusion(glm::vec3(1.0, 1.0, 1.0));
 
 			string lightLoc = "Light[" + to_string(i) + "]";
 			string positionLocStr = lightLoc + ".position";
 			string intensityLocStr = lightLoc + ".intensity";
+			string diffuseLocStr = lightLoc + ".diffuse";
+			string attenuationLocStr = lightLoc + ".attenuation";
 
 			GLuint positionLoc = glGetUniformLocation(basicShader, positionLocStr.c_str());
 			GLuint intensityLoc = glGetUniformLocation(basicShader, intensityLocStr.c_str());
+			GLuint diffuseLoc = glGetUniformLocation(basicShader, diffuseLocStr.c_str());
+			GLuint attenuationLoc = glGetUniformLocation(basicShader, attenuationLocStr.c_str());
 
-			Light light = lights.at(i);
-			glm::vec4 lightPos = glm::vec4(light.getPosition()[0], light.getPosition()[1], light.getPosition()[2], 1.0);
-			glm::vec4 lightInt = glm::vec4(light.getIntensity()[0], light.getIntensity()[1], light.getIntensity()[2], 1.0);
+			glm::vec4 lightPos = glm::vec4(light.getPosition(), 1.0);
+			glm::vec4 lightInt = glm::vec4(light.getIntensity(), 1.0);
+			glm::vec4 lightDiffuse = glm::vec4(light.getDiffusion(), 1.0);
+			glm::vec4 lightAtt = glm::vec4(light.getAttenuation(), 1.0);
 
 			glUniform3fv(positionLoc, 1, (GLfloat*)&lightPos);
 			glUniform3fv(intensityLoc, 1, (GLfloat*)&lightInt);
+			glUniform3fv(diffuseLoc, 1, (GLfloat*)&lightDiffuse);
+			glUniform3fv(attenuationLoc, 1, (GLfloat*)&lightAtt);
 		}
 
-		glUniform3fv(uLightAttenuation, 1, (GLfloat*)&attenuation);
+		//glUniform3fv(uLightAttenuation, 1, (GLfloat*)&attenuation);
 		glUniform3fv(uEyePos, 1, (GLfloat*)&eyePos);
 
 		//Pass material data
@@ -339,10 +372,13 @@ int main()
 
 		glm::vec3 cameraPos = camera.getCameraPosition();
 
-		lights.at(3).setIntensity(cameraPos);
-
+		lights.at(3).setPosition(cameraPos);
+		
+		glUniform1i(glGetUniformLocation(basicShader, "renderSpecularMap"), 0);
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(planeModel));
 		plane.draw(basicShader); //Draw the plane
+
+		glUniform1i(glGetUniformLocation(basicShader, "renderSpecularMap"), 1);
 
 		sphereModel = glm::translate(glm::mat4(1.0), glm::vec3(-3.0, 3.0, -3.0)) * scaleMat;
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(sphereModel));
