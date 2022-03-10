@@ -33,7 +33,10 @@ private:
 
 public:
 
+	int enabled;
+
 	Light(LightType typeIn, glm::vec3 positionIn, glm::vec3 intensityIn) {
+		this->enabled = 0;
 		this->lightType = typeIn;
 		this->setPosition(positionIn);
 		this->setIntensity(intensityIn);
@@ -42,6 +45,7 @@ public:
 
 	void processUniforms(GLuint shader, string lightIndex) {
 
+		glUniform1i(glGetUniformLocation(shader, string(lightIndex + ".enabled").c_str()), this->enabled);
 		glUniform1i(glGetUniformLocation(shader, string(lightIndex + ".type").c_str()), static_cast<GLuint>(this->lightType));
 		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".position").c_str()), 1, (GLfloat*)&this->position);
 		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".direction").c_str()), 1, (GLfloat*)&this->direction);
@@ -223,7 +227,7 @@ int main()
 		Light(LightType::BULB, glm::vec3(5.0, 5.0, -5.0), glm::vec3(0.0, 0.0, 4))
 	);
 	lights.push_back(
-		Light(LightType::BULB, glm::vec3(-5.0, 5.0, -5.0), glm::vec3(0.01, 0.01, 0.01))
+		Light(LightType::SPOT, glm::vec3(-5.0, 5.0, -5.0), glm::vec3(0.01, 0.01, 0.01))
 	);
 
 	lights.at(0).setAttenuation(glm::vec3(1.0, 0.09, 0.032f));
@@ -342,6 +346,9 @@ int main()
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 		glUniform3fv(glGetUniformLocation(basicShader, "eyePos"), 1, (GLfloat*)&eyePos);
 
+		lights.at(1).setPosition(eyePos);
+		lights.at(3).enabled = 1;
+
 		glUniform1i(glGetUniformLocation(basicShader, "lightCount"), lights.size());
 		for (int i = 0; i < lights.size(); i++) {
 
@@ -406,13 +413,13 @@ void processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.processKeyboard(FORWARD, timer.getDeltaTimeSeconds());
+		camera.processKeyboard(FORWARD, timer.getDeltaTimeSeconds() * 4);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.processKeyboard(BACKWARD, timer.getDeltaTimeSeconds());
+		camera.processKeyboard(BACKWARD, timer.getDeltaTimeSeconds() * 4);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.processKeyboard(LEFT, timer.getDeltaTimeSeconds());
+		camera.processKeyboard(LEFT, timer.getDeltaTimeSeconds() * 4);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.processKeyboard(RIGHT, timer.getDeltaTimeSeconds());
+		camera.processKeyboard(RIGHT, timer.getDeltaTimeSeconds() * 4);
 
 }
 

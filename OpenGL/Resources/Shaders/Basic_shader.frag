@@ -5,6 +5,8 @@ in vec3 Normal;
 in vec3 Vertex;
 
 struct LightSource {
+	int enabled;
+
 	int type;
     vec3 position;
 	vec3 intensity;
@@ -12,7 +14,7 @@ struct LightSource {
 
 	vec4 ambient;
 	vec3 diffuse;
-	//vec3 specular;
+	vec3 specular;
 
 	vec3 attenuation;
 	float cutOff;
@@ -43,7 +45,7 @@ uniform LightSource Light[16];
 out vec4 FragColour;
 
 vec4 calculateLight(LightSource light) {
-
+	
 	// Ambience	
 	vec4 texColour = texture(texture_diffuse1, TexCoord);
 
@@ -54,6 +56,8 @@ vec4 calculateLight(LightSource light) {
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
+
+	light.specular = vec3(1.0,1.0,1.0);
 
 	//Attenuation/drop-off	
 	float attD = length(light.position - Vertex);
@@ -118,7 +122,12 @@ vec4 calculateLight(LightSource light) {
 		specular = vec4(spotSpecular, 1.0);
 	}
 
-	return ambient + diffuse + specular;
+	if(light.enabled == 1) {
+		return ambient + diffuse + specular;
+	}
+	else { 
+		return vec4(0,0,0,1.0);
+	}
 }
 
 void main()
