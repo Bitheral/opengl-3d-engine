@@ -1,5 +1,5 @@
 #include "Includes.h"
-#include "stb_image.h"
+#include <utility>
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -9,50 +9,82 @@ void processInput(GLFWwindow* window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void drawSkybox(GLuint vbo, GLuint texture, GLuint shader, glm::mat4 view, glm::mat4 projection);
 
+enum class LightType {
+	BULB = 0,
+	DIRECTIONAL = 1,
+	SPOT = 2
+};
+
 // Classes
 class Light {
 
 private:
+
+	LightType lightType;
 	glm::vec3 position;
 	glm::vec3 intensity;
 	glm::vec3 attenuation;
 	glm::vec3 diffuse;
+	glm::vec3 direction = glm::vec3(-0.2f, -1.0f, -0.3f);
+	GLfloat cutOff;
+	GLfloat outerCutOff;
 
 public:
 
-	Light(glm::vec3 positionIn, glm::vec3 intensityIn) {
+	Light(LightType typeIn, glm::vec3 positionIn, glm::vec3 intensityIn) {
+		this->lightType = typeIn;
 		this->setPosition(positionIn);
 		this->setIntensity(intensityIn);
+		this->setCutOff(12.5, 17.5);
+	}
+
+	void processUniforms(GLuint shader, string lightIndex) {
+
+		GLuint typeLoc = glGetUniformLocation(shader, string(lightIndex + ".type").c_str());
+		GLuint positionLoc = glGetUniformLocation(shader, string(lightIndex + ".position").c_str());
+		GLuint directionLoc = glGetUniformLocation(shader, string(lightIndex + ".direction").c_str());
+		GLuint intensityLoc = glGetUniformLocation(shader, string(lightIndex + ".intensity").c_str());
+		GLuint diffuseLoc = glGetUniformLocation(shader, string(lightIndex + ".diffuse").c_str());
+		GLuint attenuationLoc = glGetUniformLocation(shader, string(lightIndex + ".attenuation").c_str());
+		GLuint cutOffLoc = glGetUniformLocation(shader, string(lightIndex + ".cutOff").c_str());
+		GLuint outerCutOff = glGetUniformLocation(shader, string(lightIndex + ".outerCutOff").c_str());
+
+		glUniform1i(typeLoc, static_cast<GLuint>(this->lightType));
+		glUniform3fv(positionLoc, 1, (GLfloat*)&this->position);
+		glUniform3fv(directionLoc, 1, (GLfloat*)&this->direction);
+		glUniform3fv(intensityLoc, 1, (GLfloat*)&this->intensity);
+		glUniform3fv(diffuseLoc, 1, (GLfloat*)&this->diffuse);
+		glUniform3fv(attenuationLoc, 1, (GLfloat*)&this->attenuation);
+		glUniform1f(cutOffLoc, this->cutOff);
+		glUniform1f(outerCutOff, this->outerCutOff);
 	}
 
 	void setPosition(glm::vec3 positionIn) {
 		this->position = positionIn;
 	}
-
 	void setIntensity(glm::vec3 intensityIn) {
 		this->intensity = intensityIn;
 	}
-
 	void setAttenuation(glm::vec3 attenuationIn) {
 		this->attenuation = attenuationIn;
 	}
-
 	void setDiffusion(glm::vec3 diffuseIn) {
 		this->diffuse = diffuseIn;
+	}
+	void setCutOff(GLfloat cutOffIn, GLfloat outerCutOffIn) {
+		this->cutOff = cutOffIn;
+		this->outerCutOff = outerCutOffIn;
 	}
 
 	glm::vec3 getPosition() {
 		return position;
 	}
-
 	glm::vec3 getIntensity() {
 		return intensity;
 	}
-
 	glm::vec3 getAttenuation() {
 		return attenuation;
 	}
-
 	glm::vec3 getDiffusion() {
 		return diffuse;
 	}
@@ -179,42 +211,19 @@ int main()
 
 	vector<Light> lights;
 	lights.push_back(
-		Light(glm::vec3(5.0, 5.0, 5.0), glm::vec3(8.0, 0.0, 0.0))
+		Light(LightType::DIRECTIONAL, glm::vec3(5.0, 5.0, 5.0), glm::vec3(1, 0, 0))
 	);
 	lights.push_back(
-		Light(glm::vec3(-5.0, 5.0, 5.0), glm::vec3(0.0, 8.0, 0.0))
+		Light(LightType::BULB, glm::vec3(-5.0, 5.0, 5.0), glm::vec3(0.0, 0.1, 0.0))
+	);
+	/*
+	lights.push_back(
+		Light(LightType::BULB, glm::vec3(5.0, 5.0, -5.0), glm::vec3(0.0, 0.0, 8.0))
 	);
 	lights.push_back(
-		Light(glm::vec3(5.0, 5.0, -5.0), glm::vec3(0.0, 0.0, 8.0))
+		Light(LightType::BULB, glm::vec3(-5.0, 5.0, -5.0), glm::vec3(0.01, 0.01, 0.01))
 	);
-	lights.push_back(
-		Light(glm::vec3(-5.0, 5.0, -5.0), glm::vec3(8.0, 8.0,8.0))
-	);
-
-	/*Light lightOne, lightTwo, lightThree, lightFour = Light();
-	lightOne.setPosition(5.0, 5.0, 5.0);
-	lightOne.setIntensity(8.0, 0.0, 0.0);
-
-	lightTwo.setPosition(-5.0, 5.0, 5.0);
-	lightTwo.setIntensity(0.0, 8.0, 0.0);
-
-	lightThree.setPosition(5.0, 5.0, -5.0);
-	lightThree.setIntensity(0.0, 0.0, 8.0);
-
-	lightFour.setPosition(-5.0, 5.0, -5.0);
-	lightFour.setIntensity(8.0, 8.0, 8.0);*/
-
-	//GLfloat lightOne_position[] = { 5.0, 5.0, 5.0, 1.0 };	// Point light (w=1.0)
-	//GLfloat lightOne_colour[] = { 8.0, 0.0, 0.0, 1.0 };
-
-	//GLfloat lightTwo_position[] = { -5.0, 5.0, 5.0, 1.0 };	// Point light (w=1.0)
-	//GLfloat lightTwo_colour[] = { 0.0, 8.0, 0.0, 1.0 };
-
-	//GLfloat lightThree_position[] = { 5.0, 5.0, -5.0, 1.0 };	// Point light (w=1.0)
-	//GLfloat lightThree_colour[] = { 0.0, 0.0, 8.0, 1.0 };
-
-	//GLfloat lightFour_position[] = { -5.0, 5.0, -5.0, 1.0 };	// Point light (w=1.0)
-	//GLfloat lightFour_colour[] = { 8.0, 8.0, 8.0, 1.0 };
+	*/
 
 	// Materials
 	GLfloat mat_amb_diff[] = { 1.0, 1.0, 1.0, 1.0 };	// Texture map will provide ambient and diffuse.
@@ -337,7 +346,7 @@ int main()
 			light.setDiffusion(glm::vec3(1.0, 1.0, 1.0));
 
 			string lightLoc = "Light[" + to_string(i) + "]";
-			string positionLocStr = lightLoc + ".position";
+			/*string positionLocStr = lightLoc + ".position";
 			string intensityLocStr = lightLoc + ".intensity";
 			string diffuseLocStr = lightLoc + ".diffuse";
 			string attenuationLocStr = lightLoc + ".attenuation";
@@ -355,7 +364,9 @@ int main()
 			glUniform3fv(positionLoc, 1, (GLfloat*)&lightPos);
 			glUniform3fv(intensityLoc, 1, (GLfloat*)&lightInt);
 			glUniform3fv(diffuseLoc, 1, (GLfloat*)&lightDiffuse);
-			glUniform3fv(attenuationLoc, 1, (GLfloat*)&lightAtt);
+			glUniform3fv(attenuationLoc, 1, (GLfloat*)&lightAtt);*/
+			light.setPosition(glm::vec3(light.getPosition().x, camera.getCameraPosition().y, light.getPosition().z));
+			light.processUniforms(basicShader, lightLoc);
 		}
 
 		//glUniform3fv(uLightAttenuation, 1, (GLfloat*)&attenuation);
@@ -371,8 +382,6 @@ int main()
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
 		glm::vec3 cameraPos = camera.getCameraPosition();
-
-		lights.at(3).setPosition(cameraPos);
 		
 		glUniform1i(glGetUniformLocation(basicShader, "renderSpecularMap"), 0);
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(planeModel));
