@@ -1,5 +1,6 @@
 #include "Includes.h"
 #include <utility>
+#include <cmath>
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -25,7 +26,8 @@ private:
 	glm::vec3 intensity;
 	glm::vec3 attenuation;
 	glm::vec3 diffuse;
-	glm::vec3 direction = glm::vec3(-0.2f, -1.0f, -0.3f);
+	glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f);
+	glm::vec4 ambient = glm::vec4(0.1, 0.1, 0.1, 1.0);
 	GLfloat cutOff;
 	GLfloat outerCutOff;
 
@@ -35,32 +37,31 @@ public:
 		this->lightType = typeIn;
 		this->setPosition(positionIn);
 		this->setIntensity(intensityIn);
-		this->setCutOff(12.5, 17.5);
+		this->setCutOff(1.0, 17.5);
 	}
 
 	void processUniforms(GLuint shader, string lightIndex) {
 
-		GLuint typeLoc = glGetUniformLocation(shader, string(lightIndex + ".type").c_str());
-		GLuint positionLoc = glGetUniformLocation(shader, string(lightIndex + ".position").c_str());
-		GLuint directionLoc = glGetUniformLocation(shader, string(lightIndex + ".direction").c_str());
-		GLuint intensityLoc = glGetUniformLocation(shader, string(lightIndex + ".intensity").c_str());
-		GLuint diffuseLoc = glGetUniformLocation(shader, string(lightIndex + ".diffuse").c_str());
-		GLuint attenuationLoc = glGetUniformLocation(shader, string(lightIndex + ".attenuation").c_str());
-		GLuint cutOffLoc = glGetUniformLocation(shader, string(lightIndex + ".cutOff").c_str());
-		GLuint outerCutOff = glGetUniformLocation(shader, string(lightIndex + ".outerCutOff").c_str());
+		glUniform1i(glGetUniformLocation(shader, string(lightIndex + ".type").c_str()), static_cast<GLuint>(this->lightType));
+		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".position").c_str()), 1, (GLfloat*)&this->position);
+		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".direction").c_str()), 1, (GLfloat*)&this->direction);
+		glUniform4fv(glGetUniformLocation(shader, string(lightIndex + ".ambient").c_str()), 1, (GLfloat*)&this->ambient);
+		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".intensity").c_str()), 1, (GLfloat*)&this->intensity);
+		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".diffuse").c_str()) , 1, (GLfloat*)&this->diffuse);
+		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".attenuation").c_str()), 1, (GLfloat*)&this->attenuation);
+		glUniform1f(glGetUniformLocation(shader, string(lightIndex + ".cutOff").c_str()), this->cutOff);
+		glUniform1f(glGetUniformLocation(shader, string(lightIndex + ".outerCutOff").c_str()), this->outerCutOff);
+	}
 
-		glUniform1i(typeLoc, static_cast<GLuint>(this->lightType));
-		glUniform3fv(positionLoc, 1, (GLfloat*)&this->position);
-		glUniform3fv(directionLoc, 1, (GLfloat*)&this->direction);
-		glUniform3fv(intensityLoc, 1, (GLfloat*)&this->intensity);
-		glUniform3fv(diffuseLoc, 1, (GLfloat*)&this->diffuse);
-		glUniform3fv(attenuationLoc, 1, (GLfloat*)&this->attenuation);
-		glUniform1f(cutOffLoc, this->cutOff);
-		glUniform1f(outerCutOff, this->outerCutOff);
+	void setType(LightType typeIn) {
+		this->lightType = typeIn;
 	}
 
 	void setPosition(glm::vec3 positionIn) {
 		this->position = positionIn;
+	}
+	void setDirection(glm::vec3 directionIn) {
+		this->direction = directionIn;
 	}
 	void setIntensity(glm::vec3 intensityIn) {
 		this->intensity = intensityIn;
@@ -76,6 +77,9 @@ public:
 		this->outerCutOff = outerCutOffIn;
 	}
 
+	LightType getType() {
+		return lightType;
+	}
 	glm::vec3 getPosition() {
 		return position;
 	}
@@ -120,6 +124,8 @@ Timer timer;
 
 double lastX = camera_settings.screenWidth / 2.0f;
 double lastY = camera_settings.screenHeight / 2.0f;
+
+vector<Light> lights;
 
 int main()
 {
@@ -204,38 +210,31 @@ int main()
 	sphere.attachTexture(metalMaterial.specular, "texture_specular");
 	//plane.attachTexture(metalMaterial.specular, "texture_specular");
 
-	//Light Data///////////////////////////////////////////////
 	// Lights
-	GLfloat light_ambient[] = { 0.1, 0.1, 0.1, 1.0 };	// Dim light 
 	GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };	// White main light 
 
-	vector<Light> lights;
 	lights.push_back(
-		Light(LightType::DIRECTIONAL, glm::vec3(5.0, 5.0, 5.0), glm::vec3(1, 0, 0))
+		Light(LightType::BULB, glm::vec3(5.0, 5.0, 5.0), glm::vec3(4, 0, 0))
 	);
 	lights.push_back(
-		Light(LightType::BULB, glm::vec3(-5.0, 5.0, 5.0), glm::vec3(0.0, 0.1, 0.0))
+		Light(LightType::SPOT, glm::vec3(-5.0, 5.0, 5.0), glm::vec3(0.0, 1, 0.0))
 	);
-	/*
 	lights.push_back(
-		Light(LightType::BULB, glm::vec3(5.0, 5.0, -5.0), glm::vec3(0.0, 0.0, 8.0))
+		Light(LightType::BULB, glm::vec3(5.0, 5.0, -5.0), glm::vec3(0.0, 0.0, 4))
 	);
 	lights.push_back(
 		Light(LightType::BULB, glm::vec3(-5.0, 5.0, -5.0), glm::vec3(0.01, 0.01, 0.01))
 	);
-	*/
+
+	lights.at(0).setAttenuation(glm::vec3(1.0, 0.09, 0.032f));
+	lights.at(2).setAttenuation(glm::vec3(1.0, 0.09, 0.032f));
+	lights.at(3).setAttenuation(glm::vec3(1.0, 0.09, 0.032f));
+	lights.at(1).setAttenuation(glm::vec3(1.0, 0.09, 0.032f));
 
 	// Materials
 	GLfloat mat_amb_diff[] = { 1.0, 1.0, 1.0, 1.0 };	// Texture map will provide ambient and diffuse.
 	GLfloat mat_specularCol[] = { 1.0, 1.0, 1.0, 1.0 }; // White highlight
 	GLfloat mat_specularExp = 32.0;					// Shiny surface
-
-	//Uniform Locations - Basic Shader////////////////////////////////////////////
-	// Get unifom locations in shader
-	GLuint uLightAmbient = glGetUniformLocation(basicShader, "lightAmbient");
-
-
-	GLuint uEyePos = glGetUniformLocation(basicShader, "eyePos");
 
 	// Get material unifom locations in shader
 	GLuint uMatAmbient = glGetUniformLocation(basicShader, "matAmbient");
@@ -313,8 +312,9 @@ int main()
 		// input
 		processInput(window);
 		timer.tick();
+		programTime += timer.getDeltaTimeSeconds();
 
-		string fps = "Avg FPS: " + to_string(timer.averageFPS());
+		string fps = "Avg FPS: " + to_string(int(timer.averageFPS()));
 		string windowTitle = "30003287 - Apollo / Artemis / Superheavy Starship (" + fps + ")";
 		glfwSetWindowTitle(window, windowTitle.c_str());
 
@@ -330,47 +330,30 @@ int main()
 		glm::mat4 scaleMat = glm::scale(glm::mat4(1.0), glm::vec3(0.3, 0.3, 0.3));
 		glm::vec3 eyePos = camera.getCameraPosition();
 
+		//lights.at(1).setPosition(eyePos);
+		//lights.at(1).setDirection(camera.Target);
+
 		drawSkybox(skyboxVAO, skyboxTexture, skyboxShader, view, projection);
 
 		glUseProgram(0);
 		glUseProgram(basicShader);
 
-		// Light data
-		glUniform4fv(uLightAmbient, 1, (GLfloat*)&light_ambient);
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		glUniform3fv(glGetUniformLocation(basicShader, "eyePos"), 1, (GLfloat*)&eyePos);
 
 		glUniform1i(glGetUniformLocation(basicShader, "lightCount"), lights.size());
 		for (int i = 0; i < lights.size(); i++) {
 
 			Light light = lights.at(i);
-			light.setAttenuation(glm::vec3(1.0, 0.1, 0.08));
+
 			light.setDiffusion(glm::vec3(1.0, 1.0, 1.0));
 
 			string lightLoc = "Light[" + to_string(i) + "]";
-			/*string positionLocStr = lightLoc + ".position";
-			string intensityLocStr = lightLoc + ".intensity";
-			string diffuseLocStr = lightLoc + ".diffuse";
-			string attenuationLocStr = lightLoc + ".attenuation";
-
-			GLuint positionLoc = glGetUniformLocation(basicShader, positionLocStr.c_str());
-			GLuint intensityLoc = glGetUniformLocation(basicShader, intensityLocStr.c_str());
-			GLuint diffuseLoc = glGetUniformLocation(basicShader, diffuseLocStr.c_str());
-			GLuint attenuationLoc = glGetUniformLocation(basicShader, attenuationLocStr.c_str());
-
-			glm::vec4 lightPos = glm::vec4(light.getPosition(), 1.0);
-			glm::vec4 lightInt = glm::vec4(light.getIntensity(), 1.0);
-			glm::vec4 lightDiffuse = glm::vec4(light.getDiffusion(), 1.0);
-			glm::vec4 lightAtt = glm::vec4(light.getAttenuation(), 1.0);
-
-			glUniform3fv(positionLoc, 1, (GLfloat*)&lightPos);
-			glUniform3fv(intensityLoc, 1, (GLfloat*)&lightInt);
-			glUniform3fv(diffuseLoc, 1, (GLfloat*)&lightDiffuse);
-			glUniform3fv(attenuationLoc, 1, (GLfloat*)&lightAtt);*/
-			light.setPosition(glm::vec3(light.getPosition().x, camera.getCameraPosition().y, light.getPosition().z));
 			light.processUniforms(basicShader, lightLoc);
 		}
 
 		//glUniform3fv(uLightAttenuation, 1, (GLfloat*)&attenuation);
-		glUniform3fv(uEyePos, 1, (GLfloat*)&eyePos);
 
 		//Pass material data
 		glUniform4fv(uMatAmbient, 1, (GLfloat*)&mat_amb_diff);
@@ -378,10 +361,6 @@ int main()
 		glUniform4fv(uMatSpecularCol, 1, (GLfloat*)&mat_specularCol);
 		glUniform1f(uMatSpecularExp, mat_specularExp);
 
-		glUniformMatrix4fv(glGetUniformLocation(basicShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(basicShader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
-		glm::vec3 cameraPos = camera.getCameraPosition();
 		
 		glUniform1i(glGetUniformLocation(basicShader, "renderSpecularMap"), 0);
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(planeModel));
@@ -434,6 +413,7 @@ void processInput(GLFWwindow* window)
 		camera.processKeyboard(LEFT, timer.getDeltaTimeSeconds());
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.processKeyboard(RIGHT, timer.getDeltaTimeSeconds());
+
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)

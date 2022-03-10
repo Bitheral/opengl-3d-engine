@@ -14,6 +14,7 @@ out vec3 Vertex;
 
 void main()
 {
+
 	TexCoord = texCoord;
 	
 	Normal = mat3(transpose(inverse(model))) * normal;  // normal vector in eye coordinates

@@ -10,7 +10,10 @@ struct LightSource {
 	vec3 intensity;
 	vec3 direction;
 
+	vec4 ambient;
 	vec3 diffuse;
+	//vec3 specular;
+
 	vec3 attenuation;
 	float cutOff;
 	float outerCutOff;
@@ -26,7 +29,6 @@ uniform vec3 eyePos;
 
 //Light information
 //uniform vec4		lightPosition;
-uniform vec4		lightAmbient;
 
 //Material iformation
 uniform vec4		matAmbient;
@@ -59,7 +61,7 @@ vec4 calculateLight(LightSource light) {
 
 	if(light.type == 0) {
 		//Ambient light value
-		ambient = lightAmbient * matAmbient * texColour * att;
+		ambient = light.ambient * matAmbient * texColour * att;
 
 		//Diffuse light value
 
@@ -75,7 +77,7 @@ vec4 calculateLight(LightSource light) {
 
 		
 	} else if(light.type == 1) {
-		ambient = lightAmbient * matAmbient * texColour;
+		ambient = light.ambient * matAmbient * texColour;
 
 		vec3 lightDir = normalize(-light.direction);
 		float diff = max(dot(normalizedNormal, lightDir), 0.0);
@@ -86,27 +88,34 @@ vec4 calculateLight(LightSource light) {
 		specular = matSpecularColour * texColour * vec4(light.intensity, 1.0) * spec;
 
 	} else if(light.type == 2) {
-		ambient = ambient = lightAmbient * matAmbient * texColour;
-
-		vec3 lightDir = normalize(light.position - Vertex);
+		// ambient
+		vec3 spotAmbient = light.ambient.xyz * texColour.rgb;
+    
+		// diffuse 
+		vec3 lightDir = normalize(light.position.xyz - Vertex);
 		float diff = max(dot(normalizedNormal, lightDir), 0.0);
-		diffuse = vec4(light.diffuse, 1.0) * diff * matDiffuse * texColour;
-
-		vec3 reflectDir = reflect(-viewDirection, normalizedNormal);  
+		vec3 spotDiffuse = light.diffuse * diff * texColour.rgb;
+    
+		// specular
+		vec3 reflectDir = reflect(-lightDir, normalizedNormal);  
 		float spec = pow(max(dot(viewDirection, reflectDir), 0.0), 1.0);
-		specular = matSpecularColour * texColour * vec4(light.intensity, 1.0) * spec;
-
+		vec3 spotSpecular = vec3(1.0,1.0,1.0) * spec * light.intensity * matSpecularColour.rgb;
+    
 		// spotlight (soft edges)
 		float theta = dot(lightDir, normalize(-light.direction)); 
 		float epsilon = (light.cutOff - light.outerCutOff);
 		float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
-		diffuse  *= intensity;
-		specular *= intensity;
+		spotDiffuse  *= intensity;
+		spotSpecular *= intensity;
     
 		// attenuation
-		ambient  *= att; 
-		diffuse  *= att;
-		specular *= att; 
+		spotAmbient  *= att; 
+		spotDiffuse   *= att;
+		spotSpecular *= att;   
+        
+		ambient = vec4(spotAmbient, 1.0);
+		diffuse = vec4(spotDiffuse, 1.0);
+		specular = vec4(spotSpecular, 1.0);
 	}
 
 	return ambient + diffuse + specular;
