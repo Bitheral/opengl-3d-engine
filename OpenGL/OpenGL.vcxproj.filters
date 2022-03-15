@@ -25,9 +25,6 @@
     <Filter Include="Resource Files\CoreStructures\Sources">
       <UniqueIdentifier>{eaf73aaa-e5a4-4125-b350-d998b64e2408}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\Shaders\Skybox">
-      <UniqueIdentifier>{6738a4a3-1023-49b2-a8a6-068e03f39a5f}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -87,12 +84,6 @@
     </None>
     <None Include="Resources\Shaders\Basic_shader.vert">
       <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="Resources\Shaders\skybox_vert.glsl">
-      <Filter>Resource Files\Shaders\Skybox</Filter>
-    </None>
-    <None Include="Resources\Shaders\skybox_frag.glsl">
-      <Filter>Resource Files\Shaders\Skybox</Filter>
     </None>
   </ItemGroup>
 </Project>

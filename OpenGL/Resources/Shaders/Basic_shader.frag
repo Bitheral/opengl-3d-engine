@@ -98,12 +98,12 @@ vec4 calculateLight(LightSource light) {
 		// diffuse 
 		vec3 lightDir = normalize(light.position.xyz - Vertex);
 		float diff = max(dot(normalizedNormal, lightDir), 0.0);
-		vec3 spotDiffuse = light.diffuse * diff * texColour.rgb;
+		vec3 spotDiffuse = light.diffuse * diff * texColour.rgb * light.intensity;
     
 		// specular
 		vec3 reflectDir = reflect(-lightDir, normalizedNormal);  
 		float spec = pow(max(dot(viewDirection, reflectDir), 0.0), 1.0);
-		vec3 spotSpecular = vec3(1.0,1.0,1.0) * spec * light.intensity * matSpecularColour.rgb;
+		vec3 spotSpecular = light.intensity * spec * matSpecularColour.rgb;
     
 		// spotlight (soft edges)
 		float theta = dot(lightDir, normalize(-light.direction)); 
