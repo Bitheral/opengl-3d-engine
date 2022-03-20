@@ -46,6 +46,10 @@ out vec4 FragColour;
 
 vec4 calculateLight(LightSource light) {
 	
+	if(light.enabled == 0) {
+		return vec4(0,0,0,1.0);
+	}
+
 	// Ambience	
 	vec4 texColour = texture(texture_diffuse1, TexCoord);
 
@@ -116,18 +120,13 @@ vec4 calculateLight(LightSource light) {
 		spotAmbient  *= att; 
 		spotDiffuse   *= att;
 		spotSpecular *= att;   
-        
+
 		ambient = vec4(spotAmbient, 1.0);
 		diffuse = vec4(spotDiffuse, 1.0);
 		specular = vec4(spotSpecular, 1.0);
 	}
 
-	if(light.enabled == 1) {
-		return ambient + diffuse + specular;
-	}
-	else { 
-		return vec4(0,0,0,1.0);
-	}
+	return ambient + diffuse + specular;
 }
 
 void main()

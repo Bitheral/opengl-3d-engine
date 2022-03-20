@@ -100,7 +100,7 @@ public:
 };
 
 // Camera                      screenWidth, screenHeight, nearPlane, farPlane
-Camera_settings camera_settings{ 1200, 1000, 0.1, 100.0 };
+Camera_settings camera_settings{ 1200, 1000, 0.1, 1000.0 };
 Camera camera(camera_settings, glm::vec3(0.0, 5.0, 12.0));
 
 //Timer
@@ -186,6 +186,11 @@ int main()
 	// Models
 	Model sphere = Model("Resources\\Models\\Sphere.obj");
 	Model plane = Model("Resources\\Models\\Plane.obj");
+	Model SLS = Model("Resources\\Models\\SLS\\SLS.obj");
+
+	plane.attachTexture(marbleTex);
+	SLS.attachTexture(marbleTex);
+
 	// Model spaceship = Model("Resources\\Models\\Spaceship\\Spaceship.obj");
 
 	// Lights
@@ -325,9 +330,13 @@ int main()
 		glUniform1f(uMatSpecularExp, mat_specularExp);
 
 		float speed = 5.5f;
-		glm::mat4 model = planeModel * glm::rotate(glm::mat4(1.0), glm::radians((float)programTime * speed), glm::vec3(0.0, 1.0, 0));
+		glm::mat4 model = planeModel * glm::scale(planeModel, glm::vec3(1.0, 1.0, 1.0));
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		plane.draw(basicShader); //Draw the plane
+
+		glm::mat4 SLSModel = planeModel * glm::translate(glm::mat4(1.0), glm::vec3(0.0, 1.0, 0.0));
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(SLSModel));
+		SLS.draw(basicShader);
 
 		// glfw: swap buffers and poll events
 		glfwSwapBuffers(window);
@@ -358,7 +367,6 @@ void processInput(GLFWwindow* window)
 		camera.processKeyboard(LEFT, timer.getDeltaTimeSeconds() * 4);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.processKeyboard(RIGHT, timer.getDeltaTimeSeconds() * 4);
-
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
