@@ -9,8 +9,9 @@ struct LightSource {
 
 	int type;
     vec3 position;
-	vec3 intensity;
+	float intensity;
 	vec3 direction;
+	vec3 colour;
 
 	vec4 ambient;
 	vec3 diffuse;
@@ -68,57 +69,81 @@ vec4 calculateLight(LightSource light) {
 	float att = 1.0 / (light.attenuation.x + light.attenuation.y * attD + light.attenuation.z * (attD * attD));
 
 	if(light.type == 0) {
+		// Render PointLight
+
 		//Ambient light value
-		ambient = light.ambient * matAmbient * texColour * att;
+		vec3 pointAmbient = (light.colour * light.intensity) * texColour.rgb;
+
+		//ambient = light.ambient * matAmbient * texColour * att * vec4(light.colour * light.intensity, 1.0);
 
 		//Diffuse light value
 
 		vec3 L = normalize(light.position - Vertex);
 		float lambertTerm = clamp(dot(normalizedNormal, L), 0.0, 1.0);
-		diffuse = vec4(light.diffuse, 1.0) * matDiffuse * texColour * lambertTerm * att;
+		vec3 pointDiffuse = (light.colour * light.intensity) * texColour.rgb * lambertTerm;
+		//diffuse = matDiffuse * texColour * lambertTerm * att * vec4(light.colour * light.intensity, 1.0);
 
 		//Specular light value
 
 		vec3 R = reflect(-L, normalizedNormal); // reflected light vector about normal N
 		float specularIntensity = pow(max(dot(viewDirection, R), 0.0), matSpecularExponent);
-		specular = matSpecularColour * texColour * specularIntensity * att * vec4(light.intensity, 1.0);
+		vec3 pointSpecular = (light.colour * light.intensity) * texColour.rgb * specularIntensity;
+
+		pointAmbient *= att;
+		pointDiffuse *= att;
+		pointSpecular *= att;
+
+		ambient = vec4(pointAmbient, 1.0);
+		diffuse = vec4(pointDiffuse, 1.0);
+		specular = vec4(pointSpecular, 1.0);
 
 		
 	} else if(light.type == 1) {
-		ambient = light.ambient * matAmbient * texColour;
+		// Render DirectionalLight
+
+		vec3 directionalAmbient = (light.colour * light.intensity) * texColour.rgb;
+		//ambient = light.ambient * matAmbient * texColour * vec4(light.colour * light.intensity, 1.0);
 
 		vec3 lightDir = normalize(-light.direction);
 		float diff = max(dot(normalizedNormal, lightDir), 0.0);
-		diffuse = vec4(light.diffuse, 1.0) * diff * texColour;
+		vec3 directionalDiffuse = (light.colour * light.intensity) * texColour.rgb * diff;
+		//diffuse = diff * texColour * vec4(light.colour * light.intensity, 1.0);
 
 		vec3 reflectDir = reflect(-lightDir, normalizedNormal);
 		float spec = pow(max(dot(viewDirection, reflectDir), 0.0), 1);
-		specular = matSpecularColour * texColour * vec4(light.intensity, 1.0) * spec;
+		vec3 directionalSpecular = (light.colour * light.intensity) * texColour.rgb * spec;
+		//specular = matSpecularColour * texColour  * spec * vec4(light.colour * light.intensity, 1.0);
+
+		ambient = vec4(directionalAmbient, 1.0);
+		diffuse = vec4(directionalDiffuse, 1.0);
+		specular = vec4(directionalSpecular, 1.0);
 
 	} else if(light.type == 2) {
-		// ambient
-		vec3 spotAmbient = light.ambient.xyz * texColour.rgb;
+		// Render Spotlight
+
+		// Calculate ambient lighting
+		vec3 spotAmbient = (light.colour * light.intensity) * texColour.rgb;
     
-		// diffuse 
+		// Calculate diffuse lighting
 		vec3 lightDir = normalize(light.position.xyz - Vertex);
 		float diff = max(dot(normalizedNormal, lightDir), 0.0);
-		vec3 spotDiffuse = light.diffuse * diff * texColour.rgb * light.intensity;
+		vec3 spotDiffuse = (light.colour * light.intensity) * texColour.rgb * diff;
     
-		// specular
+		// Calculate specular lighting
 		vec3 reflectDir = reflect(-lightDir, normalizedNormal);  
-		float spec = pow(max(dot(viewDirection, reflectDir), 0.0), 1.0);
-		vec3 spotSpecular = light.intensity * spec * matSpecularColour.rgb;
+		float spec = pow(max(dot(viewDirection, reflectDir), 0.0), light.intensity);
+		vec3 spotSpecular = (light.colour * light.intensity) * spec * matSpecularColour.rgb;
     
-		// spotlight (soft edges)
+		// Calulate spotlight diffusion
 		float theta = dot(lightDir, normalize(-light.direction)); 
 		float epsilon = (light.cutOff - light.outerCutOff);
 		float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 		spotDiffuse  *= intensity;
 		spotSpecular *= intensity;
     
-		// attenuation
+		// Multiply by the attenuation of the light
 		spotAmbient  *= att; 
-		spotDiffuse   *= att;
+		spotDiffuse  *= att;
 		spotSpecular *= att;   
 
 		ambient = vec4(spotAmbient, 1.0);
@@ -136,6 +161,7 @@ void main()
 		finalColour += calculateLight(Light[i]);
 	}
 
+	// Stuff for skybox
 	vec3 I = normalize(Vertex - eyePos);
     vec3 skyboxR = reflect(I, normalize(Normal));
 

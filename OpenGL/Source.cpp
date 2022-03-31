@@ -9,6 +9,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void drawSkybox(GLuint vbo, GLuint texture, GLuint shader, glm::mat4 view, glm::mat4 projection);
+glm::vec3 getMatrixPosition(glm::mat4 matrix);
 
 enum class LightType {
 	BULB = 0,
@@ -22,23 +23,29 @@ class Light {
 private:
 
 	LightType lightType;
+
 	glm::vec3 position;
-	glm::vec3 intensity;
+	glm::vec3 colour;
 	glm::vec3 attenuation;
 	glm::vec3 diffuse;
 	glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f);
+
 	glm::vec4 ambient = glm::vec4(0.1, 0.1, 0.1, 1.0);
+
 	GLfloat cutOff;
 	GLfloat outerCutOff;
+	GLfloat intensity;
 
 public:
 
 	int enabled;
 
-	Light(LightType typeIn, glm::vec3 positionIn, glm::vec3 intensityIn) {
+	Light(LightType typeIn, glm::vec3 positionIn, glm::vec3 colourIn, GLfloat intensityIn, glm::vec3 directionIn = glm::vec3(0, -1, 0)) {
 		this->enabled = 1;
 		this->lightType = typeIn;
 		this->setPosition(positionIn);
+		this->setDirection(directionIn);
+		this->setColour(colourIn);
 		this->setIntensity(intensityIn);
 		this->setCutOff(12.5, 17.5);
 		this->setAttenuation(glm::vec3(1.0, 0.09, 0.032f));
@@ -50,8 +57,9 @@ public:
 		glUniform1i(glGetUniformLocation(shader, string(lightIndex + ".type").c_str()), static_cast<GLuint>(this->lightType));
 		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".position").c_str()), 1, (GLfloat*)&this->position);
 		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".direction").c_str()), 1, (GLfloat*)&this->direction);
+		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".colour").c_str()), 1, (GLfloat*)&this->colour);
 		glUniform4fv(glGetUniformLocation(shader, string(lightIndex + ".ambient").c_str()), 1, (GLfloat*)&this->ambient);
-		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".intensity").c_str()), 1, (GLfloat*)&this->intensity);
+		glUniform1f(glGetUniformLocation(shader, string(lightIndex + ".intensity").c_str()), this->intensity);
 		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".diffuse").c_str()), 1, (GLfloat*)&this->diffuse);
 		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".attenuation").c_str()), 1, (GLfloat*)&this->attenuation);
 		glUniform1f(glGetUniformLocation(shader, string(lightIndex + ".cutOff").c_str()), this->cutOff);
@@ -68,7 +76,10 @@ public:
 	void setDirection(glm::vec3 directionIn) {
 		this->direction = directionIn;
 	}
-	void setIntensity(glm::vec3 intensityIn) {
+	void setColour(glm::vec3 colourIn) {
+		this->colour = colourIn;
+	}
+	void setIntensity(GLfloat intensityIn) {
 		this->intensity = intensityIn;
 	}
 	void setAttenuation(glm::vec3 attenuationIn) {
@@ -88,7 +99,7 @@ public:
 	glm::vec3 getPosition() {
 		return position;
 	}
-	glm::vec3 getIntensity() {
+	GLfloat getIntensity() {
 		return intensity;
 	}
 	glm::vec3 getAttenuation() {
@@ -110,10 +121,14 @@ double lastX = camera_settings.screenWidth / 2.0f;
 double lastY = camera_settings.screenHeight / 2.0f;
 
 vector<Light> lights;
+glm::vec3 ML_Position;
+GLfloat ML_heading;
 
 int main()
 {
-#pragma region Initialize OpenGL
+	float programTime = 0.0;
+
+	#pragma region Initialize OpenGL
 	// glfw: initialize and configure
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -123,7 +138,7 @@ int main()
 
 
 	// glfw window creation
-	GLFWwindow* window = glfwCreateWindow(camera_settings.screenWidth, camera_settings.screenHeight, "Computer Graphics: Tutorial 20", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(camera_settings.screenWidth, camera_settings.screenHeight, "30003287 - Artemis Generation", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -153,7 +168,7 @@ int main()
 	glEnable(GL_DEPTH_TEST);	//Enables depth testing
 	glEnable(GL_CULL_FACE);		//Enables face culling
 	glFrontFace(GL_CCW);		//Specifies which winding order if front facing
-#pragma endregion
+	#pragma endregion
 
 	//Shaders
 	GLuint basicShader;
@@ -163,6 +178,7 @@ int main()
 	GLuint metalTex;
 	GLuint marbleTex;
 	GLuint skyboxTexture;
+	GLuint VABTexture;
 
 	// Load shaders
 	GLSL_ERROR glsl_err_basic =
@@ -180,31 +196,27 @@ int main()
 
 	// Load textures
 	marbleTex = TextureLoader::loadTexture("Resources\\Models\\marble_texture.jpg");
-	skyboxTexture = TextureLoader::loadCubeMapTexture("Resources\\Textures\\skybox\\", "", ".png", GL_RGBA, GL_LINEAR, GL_LINEAR, 8.0F, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, true);
+	VABTexture = TextureLoader::loadTexture("Resources\\Textures\\VAB_Texture.png");
+	skyboxTexture = TextureLoader::loadCubeMapTexture("Resources\\Textures\\skybox\\moonlit-golf\\", "1024", ".png", GL_RGBA, GL_LINEAR, GL_LINEAR, 8.0F, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, true);
 
 
 	// Models
 	Model sphere = Model("Resources\\Models\\Sphere.obj");
 	Model plane = Model("Resources\\Models\\Plane.obj");
 	Model SLS = Model("Resources\\Models\\SLS\\SLS.obj");
+	Model ML = Model("Resources\\Models\\SLS\\ML.obj");
+	Model VAB = Model("Resources\\Models\\VAB.obj");
 
+	sphere.attachTexture(marbleTex);
 	plane.attachTexture(marbleTex);
 	SLS.attachTexture(marbleTex);
+	VAB.attachTexture(VABTexture);
 
-	// Model spaceship = Model("Resources\\Models\\Spaceship\\Spaceship.obj");
 
 	// Lights
-	GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };	// White main light 
-
-	lights.push_back(Light(LightType::BULB, glm::vec3(5.0, 5.0, 5.0), glm::vec3(4, 0, 0)));
-	lights.push_back(Light(LightType::BULB, glm::vec3(-5.0, 5.0, 5.0), glm::vec3(0.0, 1, 0.0)));
-	lights.push_back(Light(LightType::BULB, glm::vec3(5.0, 5.0, -5.0), glm::vec3(0.0, 0.0, 4)));
-	lights.push_back(Light(LightType::DIRECTIONAL , glm::vec3(-5.0, 5.0, -5.0), glm::vec3(1, 1, 1)));
-
-	// Materials
-	GLfloat mat_amb_diff[] = { 1.0, 1.0, 1.0, 1.0 };	// Texture map will provide ambient and diffuse.
-	GLfloat mat_specularCol[] = { 1.0, 1.0, 1.0, 1.0 }; // White highlight
-	GLfloat mat_specularExp = 32.0;					// Shiny surface
+	lights.push_back(Light(LightType::BULB, glm::vec3(5.0, 5.0, 5.0), glm::vec3(0.023, 0.019, 0.301), 1));
+	lights.push_back(Light(LightType::BULB, glm::vec3(-5.0, 5.0, 5.0), glm::vec3(1, 1, 0.0), 1));
+	lights.push_back(Light(LightType::BULB, glm::vec3(5.0, 5.0, -5.0), glm::vec3(1, 1, 1), 1));
 
 	// Get material unifom locations in shader
 	GLuint uMatAmbient = glGetUniformLocation(basicShader, "matAmbient");
@@ -212,10 +224,10 @@ int main()
 	GLuint uMatSpecularCol = glGetUniformLocation(basicShader, "matSpecularColour");
 	GLuint uMatSpecularExp = glGetUniformLocation(basicShader, "matSpecularExponent");
 
+	GLfloat mat_specularExp = 32;
+
 	#pragma region Skybox
-	// Skybox
 	float skyboxVertices[] = {
-		// positions          
 		-1.0f,  1.0f, -1.0f,
 		-1.0f, -1.0f, -1.0f,
 		 1.0f, -1.0f, -1.0f,
@@ -273,27 +285,29 @@ int main()
 	glUseProgram(skyboxShader);
 	glUniform1i(glGetUniformLocation(skyboxShader, "skybox"), 0);
 	#pragma endregion
+
+	
 	int frames = 0;
-	float programTime = 0.0;
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
 	{
+		cout << programTime << endl;
+
 		// input
 		processInput(window);
 		timer.tick();
 		programTime += timer.getDeltaTimeSeconds();
 
 		string fps = "Avg FPS: " + to_string(int(timer.averageFPS()));
-		string windowTitle = "30003287 - Apollo / Artemis / Superheavy Starship (" + fps + ")";
+		string windowTitle = "30003287 - Artemis Generation (" + fps + ")";
 		glfwSetWindowTitle(window, windowTitle.c_str());
 
 		// render
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glm::mat4 sphereModel = glm::mat4(1.0);
-		glm::mat4 planeModel = glm::mat4(1.0);
+		glm::mat4 identity = glm::mat4(1.0);
 		glm::mat4 view = camera.getViewMatrix();
 		glm::mat4 projection = camera.getProjectionMatrix();
 
@@ -309,34 +323,44 @@ int main()
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 		glUniform3fv(glGetUniformLocation(basicShader, "eyePos"), 1, (GLfloat*)&eyePos);
 
+		//glUniform3fv(uLightAttenuation, 1, (GLfloat*)&attenuation);
+
+		//Pass material data
+		glUniform1f(uMatSpecularExp, mat_specularExp);
+
+		float speed = 5.5f;
+		glm::mat4 model = identity * glm::scale(identity, glm::vec3(1, 1.0, 1.0));
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
+		plane.draw(basicShader); //Draw the plane
+
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(identity));
+		VAB.draw(basicShader); //Draw the plane
+
+		glm::mat4 MLModel = glm::translate(identity, ML_Position) * glm::rotate(identity, glm::radians(-ML_heading), glm::vec3(0, 1, 0));
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(MLModel));
+		ML.draw(basicShader);
+
+		glm::mat4 SLSModel = MLModel * glm::translate(identity, glm::vec3(0.0, 0.0, 0.0));
+		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(SLSModel));
+		SLS.draw(basicShader);
+
+		lights[1].setPosition(getMatrixPosition(SLSModel));
+
+		lights[2].setPosition(eyePos);
+		lights[2].setDirection(camera.Target);
+
 		glUniform1i(glGetUniformLocation(basicShader, "lightCount"), lights.size());
 		for (int i = 0; i < lights.size(); i++) {
 
 			Light light = lights.at(i);
 			string lightLoc = "Light[" + to_string(i) + "]";
 
-			light.setDiffusion(glm::vec3(1.0, 1.0, 1.0));
+			/*glm::mat4 model = glm::translate(identity, light.getPosition());
+			glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
+			sphere.draw(basicShader);*/
+
 			light.processUniforms(basicShader, lightLoc);
 		}
-
-		lights.at(3).setDirection(glm::vec3(0.0, -1.0, 0.0));
-
-		//glUniform3fv(uLightAttenuation, 1, (GLfloat*)&attenuation);
-
-		//Pass material data
-		glUniform4fv(uMatAmbient, 1, (GLfloat*)&mat_amb_diff);
-		glUniform4fv(uMatDiffuse, 1, (GLfloat*)&mat_amb_diff);
-		glUniform4fv(uMatSpecularCol, 1, (GLfloat*)&mat_specularCol);
-		glUniform1f(uMatSpecularExp, mat_specularExp);
-
-		float speed = 5.5f;
-		glm::mat4 model = planeModel * glm::scale(planeModel, glm::vec3(1.0, 1.0, 1.0));
-		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
-		plane.draw(basicShader); //Draw the plane
-
-		glm::mat4 SLSModel = planeModel * glm::translate(glm::mat4(1.0), glm::vec3(0.0, 1.0, 0.0));
-		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(SLSModel));
-		SLS.draw(basicShader);
 
 		// glfw: swap buffers and poll events
 		glfwSwapBuffers(window);
@@ -367,6 +391,26 @@ void processInput(GLFWwindow* window)
 		camera.processKeyboard(LEFT, timer.getDeltaTimeSeconds() * 4);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.processKeyboard(RIGHT, timer.getDeltaTimeSeconds() * 4);
+
+	// Controlling ML
+	float directionX = sin(ML_heading * 3.1415965 / 180.0);
+	float directionZ = -cos(ML_heading * 3.1415965 / 180.0);
+
+
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		ML_Position.x += directionX;
+		ML_Position.z += directionZ;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		ML_Position.x -= directionX;
+		ML_Position.z -= directionZ;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		ML_heading -= timer.getDeltaTimeSeconds() * 100;
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		ML_heading += timer.getDeltaTimeSeconds() * 100;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -404,23 +448,26 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 }
 
 void drawSkybox(GLuint vao, GLuint texture, GLuint shader, glm::mat4 view, glm::mat4 projection) {
-	// draw skybox as last
-	//glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-	//glDepthFunc(GL_FALSE);
+	
+	// Disable depth masking
 	glDepthMask(GL_FALSE);
+
 	glUseProgram(shader);
 	view = glm::mat4(glm::mat3(camera.getViewMatrix()));
 	glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-	/*skyboxShader.setMat4("view", view);
-	skyboxShader.setMat4("projection", projection);*/
-	// skybox cube
+
+	// Render the skybox cube
 	glBindVertexArray(vao);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
-	//glDepthFunc(GL_LESS); // set depth function back to default
-	//glDepthFunc(GL_TRUE);
+
+	// Re-enable depth mask
 	glDepthMask(GL_TRUE);
+}
+
+glm::vec3 getMatrixPosition(glm::mat4 matrix) {
+	return matrix[3];
 }

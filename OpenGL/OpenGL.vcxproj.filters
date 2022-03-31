@@ -25,6 +25,18 @@
     <Filter Include="Resource Files\CoreStructures\Sources">
       <UniqueIdentifier>{eaf73aaa-e5a4-4125-b350-d998b64e2408}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shaders\BasicShader">
+      <UniqueIdentifier>{f6a88433-92c9-440b-a032-1a03e29f7b93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\Skybox">
+      <UniqueIdentifier>{ab3daa72-b57d-4ee0-bb40-142c9578a0c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\Depth">
+      <UniqueIdentifier>{f6e58607-2544-4edc-84dc-66d8e6da4e46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\Depth\Debug">
+      <UniqueIdentifier>{4156a221-32da-42c0-8dad-d55856c59fd7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -80,10 +92,28 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\Basic_shader.frag">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\BasicShader</Filter>
     </None>
     <None Include="Resources\Shaders\Basic_shader.vert">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\BasicShader</Filter>
+    </None>
+    <None Include="Resources\Shaders\skybox_frag.glsl">
+      <Filter>Resource Files\Shaders\Skybox</Filter>
+    </None>
+    <None Include="Resources\Shaders\skybox_vert.glsl">
+      <Filter>Resource Files\Shaders\Skybox</Filter>
+    </None>
+    <None Include="Resources\Shaders\depthShader.frag">
+      <Filter>Resource Files\Shaders\Depth</Filter>
+    </None>
+    <None Include="Resources\Shaders\depthShader.vert">
+      <Filter>Resource Files\Shaders\Depth</Filter>
+    </None>
+    <None Include="Resources\Shaders\debug_depthShader.frag">
+      <Filter>Resource Files\Shaders\Depth\Debug</Filter>
+    </None>
+    <None Include="Resources\Shaders\debug_depthShader.vert">
+      <Filter>Resource Files\Shaders\Depth\Debug</Filter>
     </None>
   </ItemGroup>
 </Project>
