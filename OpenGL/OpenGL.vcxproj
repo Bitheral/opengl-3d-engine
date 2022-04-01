@@ -147,10 +147,6 @@
   <ItemGroup>
     <None Include="Resources\Shaders\Basic_shader.frag" />
     <None Include="Resources\Shaders\Basic_shader.vert" />
-    <None Include="Resources\Shaders\debug_depthShader.frag" />
-    <None Include="Resources\Shaders\debug_depthShader.vert" />
-    <None Include="Resources\Shaders\depthShader.frag" />
-    <None Include="Resources\Shaders\depthShader.vert" />
     <None Include="Resources\Shaders\skybox_frag.glsl" />
     <None Include="Resources\Shaders\skybox_vert.glsl" />
   </ItemGroup>

@@ -1,6 +1,9 @@
 #include "Includes.h"
+
+#include <stdlib.h>
 #include <utility>
 #include <cmath>
+#include <ctime>
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -9,6 +12,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void drawSkybox(GLuint vbo, GLuint texture, GLuint shader, glm::mat4 view, glm::mat4 projection);
+
 glm::vec3 getMatrixPosition(glm::mat4 matrix);
 
 enum class LightType {
@@ -48,11 +52,12 @@ public:
 		this->setColour(colourIn);
 		this->setIntensity(intensityIn);
 		this->setCutOff(12.5, 17.5);
-		this->setAttenuation(glm::vec3(1.0, 0.09, 0.032f));
+		this->setAttenuation(0.09, 0.032f);
 	}
 
 	void processUniforms(GLuint shader, string lightIndex) {
 
+		// Set light uniforms in shader with light index
 		glUniform1i(glGetUniformLocation(shader, string(lightIndex + ".enabled").c_str()), this->enabled);
 		glUniform1i(glGetUniformLocation(shader, string(lightIndex + ".type").c_str()), static_cast<GLuint>(this->lightType));
 		glUniform3fv(glGetUniformLocation(shader, string(lightIndex + ".position").c_str()), 1, (GLfloat*)&this->position);
@@ -73,6 +78,10 @@ public:
 	void setPosition(glm::vec3 positionIn) {
 		this->position = positionIn;
 	}
+	void setPosition(float x, float y, float z) {
+		this->position = glm::vec3(x, y, z);
+	}
+
 	void setDirection(glm::vec3 directionIn) {
 		this->direction = directionIn;
 	}
@@ -82,8 +91,8 @@ public:
 	void setIntensity(GLfloat intensityIn) {
 		this->intensity = intensityIn;
 	}
-	void setAttenuation(glm::vec3 attenuationIn) {
-		this->attenuation = attenuationIn;
+	void setAttenuation(GLfloat linear, GLfloat quadratic) {
+		this->attenuation = glm::vec3(1.0, linear, quadratic);
 	}
 	void setDiffusion(glm::vec3 diffuseIn) {
 		this->diffuse = diffuseIn;
@@ -111,7 +120,7 @@ public:
 };
 
 // Camera                      screenWidth, screenHeight, nearPlane, farPlane
-Camera_settings camera_settings{ 1200, 1000, 0.1, 1000.0 };
+Camera_settings camera_settings{ 800, 600, 0.1, 1000.0 };
 Camera camera(camera_settings, glm::vec3(0.0, 5.0, 12.0));
 
 //Timer
@@ -121,11 +130,103 @@ double lastX = camera_settings.screenWidth / 2.0f;
 double lastY = camera_settings.screenHeight / 2.0f;
 
 vector<Light> lights;
-glm::vec3 ML_Position;
+
+// Position for Mobile Launcher
+glm::vec3 ML_Position = glm::vec3(-1.23f, 0.0f, -4.0f);
+
+// Heading to control Mobile Launcher heading
 GLfloat ML_heading;
+
+class Vehicle {
+private:
+	float decisionTime = 0;
+	float decisionTimeLimit = 0;
+public:
+	Model* model;
+	glm::vec3 position = glm::vec3(0, 0, 0);
+	glm::vec3 direction = glm::vec3(0, 0, 0);
+	glm::vec3 target = glm::vec3(0, 0, 0);
+	float heading = 0.0f;
+	float desiredHeading = 0.0f;
+	int headLightIndex = 0;
+
+	GLfloat speed = 5.0f;
+
+	Vehicle() {
+		// Pick a random heading and random time to choose between decision making
+		this->desiredHeading = rand() % 360;
+		this->decisionTimeLimit = rand() % 5 + 2;
+
+		// Load truck model, and load random Truck texture
+		this->model = new Model("Resources\\Models\\Truck.obj");
+		this->model->attachTexture(TextureLoader::loadTexture(string("Resources\\Textures\\Truck\\Truck_" + to_string(rand() % 3 + 1) + ".png").c_str()));
+
+		// Set current decision time, to time left
+		this->decisionTime = this->decisionTimeLimit;
+	}
+
+	void addLight(vector<Light>& lights) {
+		// Add light to light vector array, and get index
+		lights.push_back(Light(LightType::SPOT, this->position, glm::vec3(1, 1, 1), 0.5, this->target));
+		this->headLightIndex = lights.size() - 1;
+	}
+
+	void render(GLuint shader) {
+
+		// Render truck model at position, with desired heading as rotation
+		glm::mat4 truckModel = glm::translate(glm::mat4(1.0), this->position);
+		truckModel = glm::rotate(truckModel, glm::radians(-this->desiredHeading), glm::vec3(0, 1, 0));
+		glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, glm::value_ptr(truckModel));
+		this->model->draw(shader);
+	}
+
+	void drive() {
+
+		// Set target heading
+		this->target.x = sin(this->desiredHeading * 3.1415965 / 180.0);
+		this->target.z = -cos(this->desiredHeading * 3.1415965 / 180.0);
+
+		// Steer towards target
+		glm::vec3 desired_velocity = this->target * this->speed * (float)timer.getDeltaTimeSeconds();
+		glm::vec3 steering = desired_velocity - this->direction;
+
+		// Move towards target
+		this->direction += steering;
+		this->position += direction;
+
+		// Get heading from current direction
+		this->heading = atan2(this->direction.z, this->direction.x);
+
+		// Move towards direction
+		this->position.x += direction.x * 0.125;
+		this->position.z += direction.z * 0.125;
+
+		// Check if Vehicle should pick a new heading
+		if (this->decisionTime <= 0) {
+			// Randomly choose a new heading based on current heading
+			int min = this->heading - 180;
+			int max = this->heading + 180;
+			this->desiredHeading = (rand() % (max - min + 1)) + min;
+
+			// Reset decision time
+			this->decisionTime = decisionTimeLimit;
+		}
+
+		// Decrease decision time
+		this->decisionTime -= timer.getDeltaTimeSeconds();
+	}
+};
+
+// Properties to check whether SLS has launched
+bool hasLaunched = false;
+glm::vec3 SLSOffset = glm::vec3(0, 0, 0);
+float velocity = 0;
+glm::mat4 MLModel;
 
 int main()
 {
+	srand(time(NULL));
+
 	float programTime = 0.0;
 
 	#pragma region Initialize OpenGL
@@ -175,10 +276,19 @@ int main()
 	GLuint skyboxShader;
 
 	// Textures
-	GLuint metalTex;
-	GLuint marbleTex;
+	// Grass
+	GLuint grassAlbedo;
+	GLuint grassSpec;
+	GLuint grassNorm;
+
+	// SLS
+	GLuint SLS_Core;
+	GLuint SLS_SRB;
+	GLuint SLS_Engine;
+
 	GLuint skyboxTexture;
 	GLuint VABTexture;
+	GLuint coreStageSpec;
 
 	// Load shaders
 	GLSL_ERROR glsl_err_basic =
@@ -195,38 +305,50 @@ int main()
 		);
 
 	// Load textures
-	marbleTex = TextureLoader::loadTexture("Resources\\Models\\marble_texture.jpg");
+	// Grass textures obtained from ambientCG (Public Domain)
+	// https://ambientCG.com/a/Ground037
+	grassAlbedo = TextureLoader::loadTexture("Resources\\Textures\\Grass\\GrassColour.png");
+	grassSpec = TextureLoader::loadTexture("Resources\\Textures\\Grass\\GrassSpec.png");
+	grassNorm = TextureLoader::loadTexture("Resources\\Textures\\Grass\\GrassNormal.png");
+
+	// VAB and VAB texture obtained from Sketchfab
+	// Modifed to fix roof UV, and removal of unnecessary features such as Humans for scale, Crawlerway and Doors, etc.
+	// https://sketchfab.com/3d-models/vehicle-assembly-building-3b37036c698548a48f727f8c8f21c01b
 	VABTexture = TextureLoader::loadTexture("Resources\\Textures\\VAB_Texture.png");
+	coreStageSpec = TextureLoader::loadTexture("Resources\\Models\\SLS\\CoreStage_spec.png");
+
+	// Load Cubemap texture
+	// Moonlit Golf obtained from PolyHaven & was converted from HDRI into a Cubemap
+	// Skybox texture: https://polyhaven.com/a/moonlit_golf
+	// HDRI to Cubemap: https://matheowis.github.io/HDRI-to-CubeMap/
 	skyboxTexture = TextureLoader::loadCubeMapTexture("Resources\\Textures\\skybox\\moonlit-golf\\", "1024", ".png", GL_RGBA, GL_LINEAR, GL_LINEAR, 8.0F, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, true);
 
-
-	// Models
-	Model sphere = Model("Resources\\Models\\Sphere.obj");
+	// Load models
 	Model plane = Model("Resources\\Models\\Plane.obj");
-	Model SLS = Model("Resources\\Models\\SLS\\SLS.obj");
+	
+	// Mobile Launcher uses a texture from ambientCG
+	// https://ambientCG.com/a/Metal038
 	Model ML = Model("Resources\\Models\\SLS\\ML.obj");
 	Model VAB = Model("Resources\\Models\\VAB.obj");
+	Model SLS = Model("Resources\\Models\\SLS\\SLS.obj");
 
-	sphere.attachTexture(marbleTex);
-	plane.attachTexture(marbleTex);
-	SLS.attachTexture(marbleTex);
+	// Attach textures onto models;
+	plane.attachTexture(grassAlbedo);
+	plane.attachTexture(grassSpec, "texture_specular");
+	plane.attachTexture(grassNorm, "texture_normal");
+
 	VAB.attachTexture(VABTexture);
+	SLS.attachTexture(coreStageSpec, "texture_specular");
 
-
-	// Lights
-	lights.push_back(Light(LightType::BULB, glm::vec3(5.0, 5.0, 5.0), glm::vec3(0.023, 0.019, 0.301), 1));
-	lights.push_back(Light(LightType::BULB, glm::vec3(-5.0, 5.0, 5.0), glm::vec3(1, 1, 0.0), 1));
-	lights.push_back(Light(LightType::BULB, glm::vec3(5.0, 5.0, -5.0), glm::vec3(1, 1, 1), 1));
-
-	// Get material unifom locations in shader
-	GLuint uMatAmbient = glGetUniformLocation(basicShader, "matAmbient");
-	GLuint uMatDiffuse = glGetUniformLocation(basicShader, "matDiffuse");
-	GLuint uMatSpecularCol = glGetUniformLocation(basicShader, "matSpecularColour");
 	GLuint uMatSpecularExp = glGetUniformLocation(basicShader, "matSpecularExponent");
-
 	GLfloat mat_specularExp = 32;
 
 	#pragma region Skybox
+
+	// Code obtained from GitHub repository JoeyDeVries/LearnOpenGL
+	// https://github.com/JoeyDeVries/LearnOpenGL/blob/166aeced4b950daf8f7617a8e68568a9e500970f/src/4.advanced_opengl/6.1.cubemaps_skybox/cubemaps_skybox.cpp#L130-L194
+
+	// Setup skybox VAO
 	float skyboxVertices[] = {
 		-1.0f,  1.0f, -1.0f,
 		-1.0f, -1.0f, -1.0f,
@@ -286,80 +408,175 @@ int main()
 	glUniform1i(glGetUniformLocation(skyboxShader, "skybox"), 0);
 	#pragma endregion
 
-	
-	int frames = 0;
+	// Setup lights
+	glm::vec3 moonColour = glm::vec3(0.05, 0.11, 0.28);
+	Light Moon = Light(LightType::DIRECTIONAL, glm::vec3(0.0f, 0.0f, 0.0f), moonColour, 0.5, glm::vec3(-0.6, -0.5, -0.7));
 
-	// render loop
+	Light USAFlag_light = Light(LightType::SPOT, glm::vec3(4.8f, 1.7f, 0.8), glm::vec3(1, 1, 1), 0.5, glm::vec3(-0.7, 0.6, 0.3));
+	Light NASALogo_light = Light(LightType::SPOT, glm::vec3(4.8f, 1.7f, -0.8), glm::vec3(1, 1, 1), 0.5, glm::vec3(-0.8, 0.6, -0.3));
+	Light SLS_SRB_l_light = Light(LightType::BULB, glm::vec3(0,0,0), glm::vec3(1, 1, 1), 1);
+	Light SLS_SRB_r_light = Light(LightType::BULB, glm::vec3(0,0,0), glm::vec3(1, 1, 1), 1);
+	
+	Light ML_Light_1 = Light(LightType::BULB, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1), 0.25);
+	Light ML_Light_2 = Light(LightType::BULB, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1), 0.25);
+	Light ML_Light_3 = Light(LightType::BULB, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1), 0.25);
+
+	Light VABTI_light = Light(LightType::BULB, glm::vec3(5.0f, 1.5f, 0), glm::vec3(0.858, 0.458, 0.231), 0.01);
+	VABTI_light.setAttenuation(4, 5);
+	
+	// Add lights to vector
+	lights.push_back(Moon);
+
+	lights.push_back(USAFlag_light);
+	lights.push_back(NASALogo_light);
+	lights.push_back(VABTI_light);
+	
+	lights.push_back(SLS_SRB_l_light);
+	lights.push_back(SLS_SRB_r_light);
+	
+	lights.push_back(ML_Light_1);
+	lights.push_back(ML_Light_2);
+	lights.push_back(ML_Light_3);
+
+	// Setup vehicles
+	vector<Vehicle> vehicles;
+	int vehicleCount = rand() % 10 + 5;
+
+	for (int i = 0; i < vehicleCount; i++) {
+		Vehicle truck = Vehicle();
+		truck.addLight(lights);
+		vehicles.push_back(truck);
+	}
+
+	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
-		cout << programTime << endl;
-
-		// input
+		// Process Input
 		processInput(window);
 		timer.tick();
 		programTime += timer.getDeltaTimeSeconds();
 
+		// Update Window title to include average FPS
 		string fps = "Avg FPS: " + to_string(int(timer.averageFPS()));
 		string windowTitle = "30003287 - Artemis Generation (" + fps + ")";
 		glfwSetWindowTitle(window, windowTitle.c_str());
 
-		// render
+		// Start rendering
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Get default values for View, Project and Model matrix
 		glm::mat4 identity = glm::mat4(1.0);
 		glm::mat4 view = camera.getViewMatrix();
 		glm::mat4 projection = camera.getProjectionMatrix();
 
-		glm::mat4 scaleMat = glm::scale(glm::mat4(1.0), glm::vec3(0.3, 0.3, 0.3));
+		// Get current camera position
 		glm::vec3 eyePos = camera.getCameraPosition();
 
+		// Render the skybox before the scene
 		drawSkybox(skyboxVAO, skyboxTexture, skyboxShader, view, projection);
 
+		// Clear shaders and set current shader to basicShader
 		glUseProgram(0);
 		glUseProgram(basicShader);
 
+		// Include view and projection and camera position into basicShader
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 		glUniform3fv(glGetUniformLocation(basicShader, "eyePos"), 1, (GLfloat*)&eyePos);
 
-		//glUniform3fv(uLightAttenuation, 1, (GLfloat*)&attenuation);
-
 		//Pass material data
 		glUniform1f(uMatSpecularExp, mat_specularExp);
 
-		float speed = 5.5f;
-		glm::mat4 model = identity * glm::scale(identity, glm::vec3(1, 1.0, 1.0));
+		// Create a model matrix, and set it's position to the center
+		// of the scene and scale it by 10 units
+		// Pass the model into the shader and set the textureScale to 20
+		glm::mat4 model = identity * glm::scale(identity, glm::vec3(10, 10.0, 10.0));
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
-		plane.draw(basicShader); //Draw the plane
+		glUniform1f(glGetUniformLocation(basicShader, "textureScale"), 20);
+		plane.draw(basicShader); //Draw the plane as the floor of the scene
+		
+		// Reset the textureScale back to 1 in the shader
+		glUniform1f(glGetUniformLocation(basicShader, "textureScale"), 1);
 
+		// Draw the VAB at the center of the scne
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(identity));
-		VAB.draw(basicShader); //Draw the plane
+		VAB.draw(basicShader); //Draw the VAB
 
-		glm::mat4 MLModel = glm::translate(identity, ML_Position) * glm::rotate(identity, glm::radians(-ML_heading), glm::vec3(0, 1, 0));
+		// Set the MLModel to be translated to its position and rotated by its heading
+		MLModel = glm::translate(identity, ML_Position) * glm::rotate(identity, glm::radians(-ML_heading), glm::vec3(0, 1, 0));
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(MLModel));
 		ML.draw(basicShader);
 
-		glm::mat4 SLSModel = MLModel * glm::translate(identity, glm::vec3(0.0, 0.0, 0.0));
+		// Create an SLSModel matrix which checks whether hasLaunched is true
+		// If so, it will translate to the SLSOffset
+		// if not, it will be set to the MLModel matrix and translate by its offset
+		glm::mat4 SLSModel = hasLaunched ? glm::translate(identity, SLSOffset) : MLModel * glm::translate(identity, SLSOffset);
 		glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(SLSModel));
-		SLS.draw(basicShader);
 
-		lights[1].setPosition(getMatrixPosition(SLSModel));
+		// Only draw the SLS model if the Y axis on SLSOffset is less or equal to 256
+		if (SLSOffset.y <= 256) {
+			SLS.draw(basicShader);
+		}
 
-		lights[2].setPosition(eyePos);
-		lights[2].setDirection(camera.Target);
+		// Set the light positions for SLS_SRB_l_light and SLS_SRB_r_light
+		// respective of the SRBs nozzle on the SLS model and only enable
+		// the lights if hasLaunched is true.
+		lights.at(4).setPosition(getMatrixPosition(SLSModel).x - 0.25, getMatrixPosition(SLSModel).y + 0.5, getMatrixPosition(SLSModel).z);
+		lights.at(4).enabled = hasLaunched;
+		lights.at(5).setPosition(getMatrixPosition(SLSModel).x + 0.25, getMatrixPosition(SLSModel).y + 0.5, getMatrixPosition(SLSModel).z);
+		lights.at(5).enabled = hasLaunched;
 
+		// Set the light positions of ML_Light_1, ML_Light_2, ML_Light_3
+		// to the center point of MLModel's position, at varying heights
+		lights.at(6).setPosition(getMatrixPosition(MLModel).x, getMatrixPosition(MLModel).y + 0.45, getMatrixPosition(MLModel).z);
+		lights.at(7).setPosition(getMatrixPosition(MLModel).x, getMatrixPosition(MLModel).y + 2.25, getMatrixPosition(MLModel).z);
+		lights.at(8).setPosition(getMatrixPosition(MLModel).x, getMatrixPosition(MLModel).y + 4.5, getMatrixPosition(MLModel).z);
+
+		// Go through each vehicle in vehicles
+		// and animate them using randomization
+		for (int i = 0; i < vehicles.size(); i++) {
+
+			// Gets current truck at index
+			Vehicle truck = vehicles.at(i);
+
+			// Sets the light's position and direction based on the truck's position and direction
+			lights.at(truck.headLightIndex).setPosition(truck.position.x, truck.position.y + 0.25, truck.position.z + 0.15);
+			lights.at(truck.headLightIndex).setDirection(truck.direction);
+
+			// Move the truck somewhere new
+			truck.drive();
+			// Render truck at new location/direction
+			truck.render(basicShader);
+
+			// Set the vehicles current index to truck
+			vehicles.at(i) = truck;
+		}
+
+
+		// Set the lightCount uniform to the size of the lights vector
+		// so that OpenGL doesn't need to go through all 64 (Maximum allowed for this application) elements
+		// just to render only a few lights;
 		glUniform1i(glGetUniformLocation(basicShader, "lightCount"), lights.size());
 		for (int i = 0; i < lights.size(); i++) {
 
+			// Get current light
 			Light light = lights.at(i);
+
+			// Format current index to GLSL
 			string lightLoc = "Light[" + to_string(i) + "]";
-
-			/*glm::mat4 model = glm::translate(identity, light.getPosition());
-			glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
-			sphere.draw(basicShader);*/
-
+			
+			// Set the uniform variables on basic shader
+			// to the current index of lights vector
 			light.processUniforms(basicShader, lightLoc);
+		}
+
+		// Check if SLS has launched
+		if (hasLaunched) {
+			// Increase velocity over time
+			// Increase Y offset from origin
+			velocity += timer.getDeltaTimeSeconds() * 2;
+			SLSOffset.y += velocity * timer.getDeltaTimeSeconds();
 		}
 
 		// glfw: swap buffers and poll events
@@ -372,6 +589,7 @@ int main()
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	glfwTerminate();
+
 	return 0;
 }
 
@@ -380,9 +598,11 @@ void processInput(GLFWwindow* window)
 {
 	timer.updateDeltaTime();
 
+	// Close program
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
+	// Move Camera
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.processKeyboard(FORWARD, timer.getDeltaTimeSeconds() * 4);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -392,25 +612,51 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.processKeyboard(RIGHT, timer.getDeltaTimeSeconds() * 4);
 
-	// Controlling ML
-	float directionX = sin(ML_heading * 3.1415965 / 180.0);
-	float directionZ = -cos(ML_heading * 3.1415965 / 180.0);
+	// Get current direction that the Mobile Launcher is facing
+	// into a vector (Converting from an angle to Vector)
+	GLfloat directionX = sin(ML_heading * 3.1415965 / 180.0);
+	GLfloat directionZ = -cos(ML_heading * 3.1415965 / 180.0);
 
+	// Move Mobile Launcher forward or backward depending whether
+	// user is holding down Up Arrow key or Down Arrow Key
 
+	// Move forward
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-		ML_Position.x += directionX;
-		ML_Position.z += directionZ;
+		ML_Position.x += directionX * 3.0f * timer.getDeltaTimeSeconds();
+		ML_Position.z += directionZ * 3.0f * timer.getDeltaTimeSeconds();
 	}
 
+	// Move back
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		ML_Position.x -= directionX;
-		ML_Position.z -= directionZ;
+		ML_Position.x -= directionX * 3.0f * timer.getDeltaTimeSeconds();
+		ML_Position.z -= directionZ * 3.0f * timer.getDeltaTimeSeconds();
 	}
 
+	// Rotate the Mobile Launcher depending whether 
+	// user is holding down Left Arrow Key or Right Arrow Key
+	
+	// Rotate Left
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
 		ML_heading -= timer.getDeltaTimeSeconds() * 100;
+	// Rotate Right
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
 		ML_heading += timer.getDeltaTimeSeconds() * 100;
+
+	// "Launch" SLS Rocket when user presses Spacebar
+	// SLSOffset will be set the Matrix position of MLModel
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+		SLSOffset = getMatrixPosition(MLModel);
+		hasLaunched = true;
+	}
+
+	// SLS rocket will reset when user presses R
+	// SLSOffset will return back to origin point of 0, 0, 0
+	// and velocity will be set to 0
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+		SLSOffset = glm::vec3(0, 0, 0);
+		velocity = 0;
+		hasLaunched = false;
+	}
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -449,9 +695,16 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void drawSkybox(GLuint vao, GLuint texture, GLuint shader, glm::mat4 view, glm::mat4 projection) {
 	
-	// Disable depth masking
+	// Code obtained from GitHub repository JoeyDeVries/LearnOpenGL
+	// https://github.com/JoeyDeVries/LearnOpenGL/blob/166aeced4b950daf8f7617a8e68568a9e500970f/src/4.advanced_opengl/6.1.cubemaps_skybox/cubemaps_skybox.cpp#L253-L265
+
+	// Disable depth mask
+	// This is so that there is no depth
+	// percieved whilst rendering the cube
+	// to draw the skybox
 	glDepthMask(GL_FALSE);
 
+	// Setup shader matrices
 	glUseProgram(shader);
 	view = glm::mat4(glm::mat3(camera.getViewMatrix()));
 	glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -468,6 +721,10 @@ void drawSkybox(GLuint vao, GLuint texture, GLuint shader, glm::mat4 view, glm::
 	glDepthMask(GL_TRUE);
 }
 
+
+// Get position vector from Matrix
+// Solution:
+// https://stackoverflow.com/a/19448411
 glm::vec3 getMatrixPosition(glm::mat4 matrix) {
 	return matrix[3];
 }
