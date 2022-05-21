@@ -1,0 +1,3 @@
+/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/3DEngine.dir
+/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/edit_cache.dir
+/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/rebuild_cache.dir
