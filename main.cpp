@@ -8,6 +8,13 @@
 #include <utility>
 #include <cmath>
 #include <ctime>
+#include <glm/gtx/matrix_decompose.hpp>
+
+struct Transform {
+    glm::vec3 position;
+    glm::quat rotation;
+    glm::vec3 scale;
+};
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -18,6 +25,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void drawSkybox(GLuint vbo, GLuint texture, GLuint shader, glm::mat4 view, glm::mat4 projection);
 
 glm::vec3 getMatrixPosition(glm::mat4 matrix);
+Transform deconstructMatrix(glm::mat4 matrix);
+
 
 enum class LightType {
     BULB = 0,
@@ -224,6 +233,7 @@ public:
 // Properties to check whether SLS has launched
 bool hasLaunched = false;
 glm::vec3 SLSOffset = glm::vec3(0, 0, 0);
+float SLSRotation = 0;
 float velocity = 0;
 glm::mat4 MLModel;
 
@@ -515,7 +525,8 @@ int main()
         // Create an SLSModel matrix which checks whether hasLaunched is true
         // If so, it will translate to the SLSOffset
         // if not, it will be set to the MLModel matrix and translate by its offset
-        glm::mat4 SLSModel = hasLaunched ? glm::translate(identity, SLSOffset) : MLModel * glm::translate(identity, SLSOffset);
+        glm::mat4 SLSModel = hasLaunched ? glm::translate(identity, SLSOffset) * glm::rotate(identity, glm::radians(-SLSRotation), glm::vec3(0,1,0)) : MLModel * glm::translate(identity, SLSOffset);
+
         glUniformMatrix4fv(glGetUniformLocation(basicShader, "model"), 1, GL_FALSE, glm::value_ptr(SLSModel));
 
         // Only draw the SLS model if the Y axis on SLSOffset is less or equal to 256
@@ -648,8 +659,10 @@ void processInput(GLFWwindow* window)
 
     // "Launch" SLS Rocket when user presses Spacebar
     // SLSOffset will be set the Matrix position of MLModel
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !hasLaunched) {
         SLSOffset = getMatrixPosition(MLModel);
+        SLSRotation = ML_heading;
+
         hasLaunched = true;
     }
 
@@ -731,4 +744,19 @@ void drawSkybox(GLuint vao, GLuint texture, GLuint shader, glm::mat4 view, glm::
 // https://stackoverflow.com/a/19448411
 glm::vec3 getMatrixPosition(glm::mat4 matrix) {
     return matrix[3];
+}
+
+Transform deconstructMatrix(glm::mat4 matrix) {
+    glm::vec3 scale;
+    glm::quat rotation;
+    glm::vec3 translation;
+    glm::vec3 skew;
+    glm::vec4 perspective;
+    glm::decompose(matrix, scale, rotation, translation, skew,perspective);
+
+    Transform matrixTransform;
+    matrixTransform.position = translation;
+    matrixTransform.rotation = rotation;
+    matrixTransform.scale = scale;
+    return matrixTransform;
 }

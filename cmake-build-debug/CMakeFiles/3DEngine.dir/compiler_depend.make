@@ -5711,8 +5711,14 @@ CMakeFiles/3DEngine.dir/main.cpp.o: ../main.cpp \
   ../lib/CoreStructures/Camera.h \
   ../lib/CoreStructures/ShaderLoader.h \
   ../lib/CoreStructures/TextureLoader.h \
-  /usr/include/c++/9/stdlib.h
+  /usr/include/c++/9/stdlib.h \
+  /usr/local/include/glm/gtx/matrix_decompose.hpp \
+  /usr/local/include/glm/gtx/matrix_decompose.inl
 
+
+/usr/local/include/glm/gtx/matrix_decompose.inl:
+
+/usr/local/include/glm/gtx/matrix_decompose.hpp:
 
 /usr/include/c++/9/bits/parse_numbers.h:
 

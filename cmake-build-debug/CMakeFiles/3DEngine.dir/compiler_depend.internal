@@ -5731,4 +5731,6 @@ CMakeFiles/3DEngine.dir/main.cpp.o
  /mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/ShaderLoader.h
  /mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/TextureLoader.h
  /usr/include/c++/9/stdlib.h
+ /usr/local/include/glm/gtx/matrix_decompose.hpp
+ /usr/local/include/glm/gtx/matrix_decompose.inl
 
