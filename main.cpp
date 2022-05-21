@@ -173,6 +173,7 @@ public:
         // Load truck model, and load random Truck texture
         this->model = new Model("../Resources/Models/Truck.obj");
         this->model->attachTexture(TextureLoader::loadTexture(string("../Resources/Textures/Truck/Truck_" + to_string(rand() % 3 + 1) + ".png").c_str()));
+        this->model->attachTexture(0, "texture_specular");
 
         // Set current decision time, to time left
         this->decisionTime = this->decisionTimeLimit;
@@ -346,13 +347,16 @@ int main()
     Model VAB = Model("../Resources/Models/VAB.obj");
     Model SLS = Model("../Resources/Models/SLS/SLS.obj");
 
-    // Attach textures onto models;
-    plane.attachTexture(grassAlbedo);
-    plane.attachTexture(grassSpec, "texture_specular");
-    plane.attachTexture(grassNorm, "texture_normal");
+    // Clear textures
+    ML.attachTexture(0, "texture_normal");
+    VAB.attachTexture(0, "texture_normal");
 
     VAB.attachTexture(VABTexture);
     SLS.attachTexture(coreStageSpec, "texture_specular");
+
+    plane.attachTexture(grassAlbedo);
+    plane.attachTexture(grassSpec, "texture_specular");
+    plane.attachTexture(grassNorm, "texture_normal");
 
     GLuint uMatSpecularExp = glGetUniformLocation(basicShader, "matSpecularExponent");
     GLfloat mat_specularExp = 32;
