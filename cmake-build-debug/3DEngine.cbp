@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="3DEngine"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\..\;CMake Files\..\..\..\..\..\;CMake Files\..\..\..\..\..\..\;CMake Files\..\..\..\..\..\..\..\;CMake Files\..\..\..\..\..\..\..\usr\;CMake Files\..\..\..\..\..\..\..\usr\local\;CMake Files\..\..\..\..\..\..\..\usr\local\lib\;CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\;CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\assimp-5.2\;CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\glfw3\;CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\freetype\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="3DEngine">
+				<Option output="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/3DEngine" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures"/>
+					<Add directory="/usr/local/include/freetype2"/>
+					<Add directory="/usr/include/c++/9"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
+					<Add directory="/usr/include/c++/9/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 3DEngine"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="3DEngine/fast">
+				<Option output="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/3DEngine" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures"/>
+					<Add directory="/usr/local/include/freetype2"/>
+					<Add directory="/usr/include/c++/9"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
+					<Add directory="/usr/include/c++/9/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 3DEngine/fast"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/mnt/Development/University/Y2/Computer\ Graphics/Assignments/3DEngine/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/Includes.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/glad.c">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/AABB.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/AABB.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Camera.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Camera.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Circle.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Circle.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/FloatImage.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/FloatImage.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Mesh.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Mesh.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Model.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Model.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Noise.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/NoiseImages.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/NoiseImages.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/PerlinNoise.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/PerlinNoise.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/PrincipleAxes.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/PrincipleAxes.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/ScreenAlignedQuad.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/ScreenAlignedQuad.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/ShaderLoader.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/ShaderLoader.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/SkinnedMesh.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/SkinnedMesh.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/SkyBox.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/SkyBox.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Sphere.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Sphere.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/TextureLoader.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/TextureLoader.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/TexturedQuad.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/TexturedQuad.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Timer.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/lib/CoreStructures/Timer.h">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/main.cpp">
+			<Option target="3DEngine"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/assimp-5.2/assimpConfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\assimp-5.2\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/assimp-5.2/assimpConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\assimp-5.2\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/assimp-5.2/assimpTargets-noconfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\assimp-5.2\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/assimp-5.2/assimpTargets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\assimp-5.2\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/glfw3/glfw3Config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\glfw3\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/glfw3/glfw3ConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\glfw3\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/glfw3/glfw3Targets-noconfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\glfw3\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/glfw3/glfw3Targets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\glfw3\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/freetype/freetype-config-noconfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\freetype\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/freetype/freetype-config-version.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\freetype\"/>
+		</Unit>
+		<Unit filename="/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/../../../../../../../usr/local/lib/cmake/freetype/freetype-config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\usr\local\lib\cmake\freetype\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

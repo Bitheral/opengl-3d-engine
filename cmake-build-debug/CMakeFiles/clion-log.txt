@@ -1,4 +1,4 @@
-/snap/clion/190/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/snap/clion/190/bin/ninja/linux/ninja -G Ninja -S "/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine" -B "/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug"
+/snap/clion/190/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" -S "/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine" -B "/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug"
 -- Configuring done
 -- Generating done
 -- Build files have been written to: /mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug

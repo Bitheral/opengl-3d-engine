@@ -1,17 +1,22 @@
 Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
 Change Dir: /mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/snap/clion/190/bin/ninja/linux/ninja cmTC_526b3 && [1/2] Building C object CMakeFiles/cmTC_526b3.dir/src.c.o
-[2/2] Linking C executable cmTC_526b3
-FAILED: cmTC_526b3 
-: && /usr/bin/cc   CMakeFiles/cmTC_526b3.dir/src.c.o -o cmTC_526b3   && :
-/usr/bin/ld: CMakeFiles/cmTC_526b3.dir/src.c.o: in function `main':
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_eb3d4/fast && /usr/bin/make  -f CMakeFiles/cmTC_eb3d4.dir/build.make CMakeFiles/cmTC_eb3d4.dir/build
+make[1]: Entering directory '/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_eb3d4.dir/src.c.o
+/usr/bin/cc -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_eb3d4.dir/src.c.o -c "/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/CMakeTmp/src.c"
+Linking C executable cmTC_eb3d4
+/snap/clion/190/bin/cmake/linux/bin/cmake -E cmake_link_script CMakeFiles/cmTC_eb3d4.dir/link.txt --verbose=1
+/usr/bin/cc CMakeFiles/cmTC_eb3d4.dir/src.c.o -o cmTC_eb3d4 
+/usr/bin/ld: CMakeFiles/cmTC_eb3d4.dir/src.c.o: in function `main':
 src.c:(.text+0x46): undefined reference to `pthread_create'
 /usr/bin/ld: src.c:(.text+0x52): undefined reference to `pthread_detach'
 /usr/bin/ld: src.c:(.text+0x5e): undefined reference to `pthread_cancel'
 /usr/bin/ld: src.c:(.text+0x6f): undefined reference to `pthread_join'
 collect2: error: ld returned 1 exit status
-ninja: build stopped: subcommand failed.
+make[1]: *** [CMakeFiles/cmTC_eb3d4.dir/build.make:99: cmTC_eb3d4] Error 1
+make[1]: Leaving directory '/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/CMakeTmp'
+make: *** [Makefile:127: cmTC_eb3d4/fast] Error 2
 
 
 Source file was:
@@ -38,13 +43,18 @@ int main(void)
 Determining if the function pthread_create exists in the pthreads failed with the following output:
 Change Dir: /mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/snap/clion/190/bin/ninja/linux/ninja cmTC_c3ca2 && [1/2] Building C object CMakeFiles/cmTC_c3ca2.dir/CheckFunctionExists.c.o
-[2/2] Linking C executable cmTC_c3ca2
-FAILED: cmTC_c3ca2 
-: && /usr/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  CMakeFiles/cmTC_c3ca2.dir/CheckFunctionExists.c.o -o cmTC_c3ca2  -lpthreads && :
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_c4e60/fast && /usr/bin/make  -f CMakeFiles/cmTC_c4e60.dir/build.make CMakeFiles/cmTC_c4e60.dir/build
+make[1]: Entering directory '/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_c4e60.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create -o CMakeFiles/cmTC_c4e60.dir/CheckFunctionExists.c.o -c /snap/clion/190/bin/cmake/linux/share/cmake-3.22/Modules/CheckFunctionExists.c
+Linking C executable cmTC_c4e60
+/snap/clion/190/bin/cmake/linux/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c4e60.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create CMakeFiles/cmTC_c4e60.dir/CheckFunctionExists.c.o -o cmTC_c4e60  -lpthreads 
 /usr/bin/ld: cannot find -lpthreads
 collect2: error: ld returned 1 exit status
-ninja: build stopped: subcommand failed.
+make[1]: *** [CMakeFiles/cmTC_c4e60.dir/build.make:99: cmTC_c4e60] Error 1
+make[1]: Leaving directory '/mnt/Development/University/Y2/Computer Graphics/Assignments/3DEngine/cmake-build-debug/CMakeFiles/CMakeTmp'
+make: *** [Makefile:127: cmTC_c4e60/fast] Error 2
 
 
 

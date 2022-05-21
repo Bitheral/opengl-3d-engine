@@ -42,7 +42,7 @@ void Model::loadModel(string const &path)
 		return;
 	}
 	// retrieve the directory path of the filepath
-	directory = path.substr(0, path.find_last_of("/\\"));
+	directory = path.substr(0, path.find_last_of("/"));
 
 	// process ASSIMP's root node recursively
 	processNode(scene->mRootNode, scene);
@@ -173,11 +173,12 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
 				break;
 			}
 		}
+
 		if (!skip)
 		{   // if texture hasn't been loaded already, load it
 			Texture texture;
 			string fullPath = directory;
-			fullPath.append("\\" + string(str.C_Str()));
+			fullPath.append("/" + string(str.C_Str()));
 			texture.id = TextureLoader::loadTexture(fullPath);
 			texture.type = typeName;
 			texture.path = str.C_Str();

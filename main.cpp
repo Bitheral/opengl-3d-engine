@@ -162,8 +162,8 @@ public:
         this->decisionTimeLimit = rand() % 5 + 2;
 
         // Load truck model, and load random Truck texture
-        this->model = new Model("Resources\\Models\\Truck.obj");
-        this->model->attachTexture(TextureLoader::loadTexture(string("Resources\\Textures\\Truck\\Truck_" + to_string(rand() % 3 + 1) + ".png").c_str()));
+        this->model = new Model("../Resources/Models/Truck.obj");
+        this->model->attachTexture(TextureLoader::loadTexture(string("../Resources/Textures/Truck/Truck_" + to_string(rand() % 3 + 1) + ".png").c_str()));
 
         // Set current decision time, to time left
         this->decisionTime = this->decisionTimeLimit;
@@ -334,7 +334,7 @@ int main()
     // https://ambientCG.com/a/Metal038
     Model ML = Model("../Resources/Models/SLS/ML.obj");
     Model VAB = Model("../Resources/Models/VAB.obj");
-    Model SLS = Model("../Resources/ModelS/SLS/SLS.obj");
+    Model SLS = Model("../Resources/Models/SLS/SLS.obj");
 
     // Attach textures onto models;
     plane.attachTexture(grassAlbedo);
